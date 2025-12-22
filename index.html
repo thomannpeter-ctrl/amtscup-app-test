@@ -41,9 +41,9 @@ button{width:100%;padding:.8rem;border:none;border-radius:999px;background:#2563
 <div class="card">
 <h2>2. Gruppenwahl</h2>
 <div class="row">
-  <div class="field"><label>Gruppe 1 *</label><select id="g1"></select></div>
-  <div class="field"><label>Gruppe 2 *</label><select id="g2"></select></div>
-  <div class="field"><label>Gruppe 3 (optional)</label><select id="g3"></select></div>
+  <div class="field"><label>Gruppe 1 *</label><select id="g1" onchange="updateTitles()"></select></div>
+  <div class="field"><label>Gruppe 2 *</label><select id="g2" onchange="updateTitles()"></select></div>
+  <div class="field"><label>Gruppe 3 (optional)</label><select id="g3" onchange="updateTitles()"></select></div>
 </div>
 </div>
 
@@ -61,18 +61,22 @@ button{width:100%;padding:.8rem;border:none;border-radius:999px;background:#2563
 </div>
 
 <script>
-const SCRIPT_URL = "HIER_DEIN_WEBAPP_URL_EINFÜGEN";
+/* ================= KONFIG ================= */
+const SCRIPT_URL = "HIER_DEINE_WEBAPP_URL";
 
+/* Sportgeräte + Zuschläge */
 const SPORT = {
-  "Standard":0,
-  "FG":0,
-  "Karabiner":4,
-  "57/02":8,
-  "57/03":4,
-  "90BK":4,
-  "90RK":4
+  "": 0,
+  "Standard": 0,
+  "FG": 0,
+  "Karabiner": 4,
+  "57/02": 8,
+  "57/03": 4,
+  "90BK": 4,
+  "90RK": 4
 };
 
+/* ================= GRUPPEN LADEN ================= */
 function loadGroups(){
   fetch("gruppen.txt?ts="+Date.now())
   .then(r=>r.text())
@@ -80,16 +84,17 @@ function loadGroups(){
     const g=t.split(/\r?\n/).filter(x=>x.trim());
     ["g1","g2","g3"].forEach(id=>{
       const s=document.getElementById(id);
-      s.innerHTML="<option></option>";
+      s.innerHTML="<option value=''>Bitte wählen …</option>";
       g.forEach(x=>{
         const o=document.createElement("option");
-        o.textContent=o.value=x;
+        o.value=o.textContent=x;
         s.appendChild(o);
       });
     });
   });
 }
 
+/* ================= GRUPPEN TABELLEN ================= */
 function createGroup(n){
   const d=document.createElement("div");
   d.className="card";
@@ -98,24 +103,34 @@ function createGroup(n){
 <h2 id="title${n}">Gruppe ${n}</h2>
 <table>
 <thead>
-<tr><th>#</th><th>Name</th><th>Jahrgang</th><th>Sportgerät</th><th>Resultat</th><th>Zuschlag</th><th>Total</th></tr>
+<tr>
+<th>#</th><th>Name</th><th>Jahrgang</th>
+<th>Sportgerät</th><th>Resultat</th><th>Zuschlag</th><th>Total</th>
+</tr>
 </thead>
 <tbody></tbody>
 <tfoot>
-<tr class="sum"><td colspan="4">Summe</td>
-<td id="sr${n}">0</td><td id="sz${n}">0</td><td id="st${n}">0</td></tr>
+<tr class="sum">
+<td colspan="4">Summe</td>
+<td id="sr${n}">0</td>
+<td id="sz${n}">0</td>
+<td id="st${n}">0</td>
+</tr>
 </tfoot>
 </table>`;
   const tb=d.querySelector("tbody");
+
   for(let i=1;i<=5;i++){
     tb.innerHTML+=`
 <tr>
 <td>${i}</td>
 <td><input></td>
 <td><input type="number"></td>
-<td><select onchange="calc(${n})">
-${Object.keys(SPORT).map(k=>`<option>${k}</option>`).join("")}
-</select></td>
+<td>
+<select onchange="calc(${n})">
+${Object.keys(SPORT).map(k=>`<option value="${k}">${k||"Bitte wählen …"}</option>`).join("")}
+</select>
+</td>
 <td><input type="number" oninput="calc(${n})"></td>
 <td class="z">0</td>
 <td class="t">0</td>
@@ -124,13 +139,24 @@ ${Object.keys(SPORT).map(k=>`<option>${k}</option>`).join("")}
   document.getElementById("groups").appendChild(d);
 }
 
+/* ================= TITEL AKTUALISIEREN ================= */
+function updateTitles(){
+  [1,2,3].forEach(n=>{
+    const g=document.getElementById("g"+n).value;
+    document.getElementById("title"+n).textContent =
+      g ? `Gruppe ${n} – ${g}` : `Gruppe ${n}`;
+  });
+  updateWinner();
+}
+
+/* ================= BERECHNUNG ================= */
 function calc(n){
   let sr=0,sz=0,st=0;
   document.querySelectorAll(`#group${n} tbody tr`).forEach(r=>{
     const res=+r.children[4].querySelector("input").value||0;
     const g=r.children[3].querySelector("select").value;
     const z=SPORT[g]||0;
-    r.children[5].textContent=z;
+    r.children[5].textContent=z||0;
     r.children[6].textContent=res+z;
     sr+=res; sz+=z; st+=res+z;
   });
@@ -140,25 +166,28 @@ function calc(n){
   updateWinner();
 }
 
+/* ================= SIEGER ================= */
 function updateWinner(){
   const sums=[];
   [1,2,3].forEach(n=>{
     const g=document.getElementById("g"+n).value;
-    if(!g) return;
     const t=+document.getElementById("st"+n).textContent||0;
-    sums.push({g,t});
+    if(g && t>0) sums.push({g,t});
   });
+
   sums.sort((a,b)=>b.t-a.t);
   if(!sums.length){winner.textContent="Noch keine Resultate";return;}
-  if(sums.length==2){
-    winner.textContent="🏆 Sieger: "+sums[0].g+" ("+sums[0].t+")";
+
+  if(sums.length===2){
+    winner.textContent=`🏆 Sieger: ${sums[0].g} (${sums[0].t})`;
     winner.className="winner w1";
-  }else{
-    winner.textContent="🏆 Sieger: "+sums[0].g+" & "+sums[1].g;
+  } else {
+    winner.textContent=`🏆 Sieger: ${sums[0].g} & ${sums[1].g}`;
     winner.className="winner w2";
   }
 }
 
+/* ================= SENDEN ================= */
 function send(){
   const entries=[];
   [1,2,3].forEach(n=>{
@@ -190,6 +219,7 @@ function send(){
   location.href="mailto:thomannpeter@bluewin.ch?subject=Amtscup Resultat";
 }
 
+/* ================= START ================= */
 loadGroups();
 createGroup(1);createGroup(2);createGroup(3);
 </script>
