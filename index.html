@@ -4,35 +4,74 @@
 <meta charset="UTF-8">
 <title>Amtscup – Cup-Duell</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
-body{font-family:system-ui;background:#eef2f7;margin:0}
+*{box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:#eef2f7;margin:0;color:#111827}
 .container{max-width:1200px;margin:auto;padding:1rem}
-.card{background:#fff;border-radius:14px;padding:1rem;margin-bottom:1rem}
-h1,h2{color:#1e3a8a}
-table{width:100%;border-collapse:collapse;font-size:.9rem}
-th,td{border:1px solid #e5e7eb;padding:.4rem;text-align:center}
+h1{color:#1e3a8a}
+h2{color:#1d4ed8;margin:.5rem 0}
+.card{background:#fff;border-radius:14px;padding:1rem 1.25rem;
+box-shadow:0 4px 10px rgba(15,23,42,.08);margin-bottom:1rem}
+.row{display:flex;gap:.75rem;flex-wrap:wrap}
+.field{flex:1;min-width:200px}
+label{font-size:.8rem;font-weight:600}
+input,select{width:100%;padding:.45rem;border-radius:8px;border:1px solid #cbd5f5}
+
+table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:.5rem}
+th,td{border:1px solid #e5e7eb;padding:.35rem;text-align:center}
 th{background:#dbeafe}
-input,select{width:100%;padding:.4rem}
-.sum{background:#f3f4f6;font-weight:700}
-.winner{background:#dcfce7;font-weight:800;padding:.6rem;border-radius:999px}
+tfoot td{background:#f3f4f6;font-weight:700}
+
+.sumcell{background:#f3f4f6;font-weight:700}
+.winner{padding:.6rem 1rem;border-radius:999px;font-weight:700}
+.win{background:#dcfce7;color:#166534}
+.draw{background:#fef9c3;color:#854d0e}
+
+button{
+border:none;border-radius:999px;padding:.7rem 1.2rem;
+font-size:1rem;cursor:pointer;background:#2563eb;color:#fff;width:100%
+}
 </style>
 </head>
 
 <body>
 <div class="container">
+
 <h1>Amtscup – Cup-Duell</h1>
 
+<!-- Gruppenchef -->
 <div class="card">
 <h2>1. Gruppenchef</h2>
-<input id="chef" placeholder="Name Gruppenchef">
-<input id="email" placeholder="E-Mail">
+<div class="row">
+  <div class="field">
+    <label>Name</label>
+    <input id="chef">
+  </div>
+  <div class="field">
+    <label>E-Mail</label>
+    <input id="email" type="email">
+  </div>
+</div>
 </div>
 
+<!-- Gruppenwahl -->
 <div class="card">
 <h2>2. Gruppenwahl</h2>
-<select id="g1"></select>
-<select id="g2"></select>
-<select id="g3"></select>
+<div class="row">
+  <div class="field">
+    <label>Gruppe 1 *</label>
+    <select id="g1" onchange="updateTitles()"></select>
+  </div>
+  <div class="field">
+    <label>Gruppe 2 *</label>
+    <select id="g2" onchange="updateTitles()"></select>
+  </div>
+  <div class="field">
+    <label>Gruppe 3 (optional)</label>
+    <select id="g3" onchange="updateTitles()"></select>
+  </div>
+</div>
 </div>
 
 <div id="groups"></div>
@@ -45,96 +84,141 @@ input,select{width:100%;padding:.4rem}
 </div>
 
 <script>
+/* ================= ZUSCHLÄGE ================= */
 const ZUSCHLAG_MAP = {
-  "Standard":0,"FG":0,"Karabiner":4,"57/02":8,"57/03":4,"90BK":4,"90RK":4
+  "Karabiner": 4,
+  "57/02": 8,
+  "57/03": 4,
+  "90BK": 4,
+  "90RK": 4
 };
 
+/* ================= GRUPPEN ================= */
 async function loadGroups(){
-  const t = await (await fetch("gruppen.txt")).text();
-  const g = t.split(/\r?\n/).filter(x=>x.trim());
+  const r = await fetch("gruppen.txt?ts="+Date.now(),{cache:"no-store"});
+  const g = r.ok ? (await r.text()).split(/\r?\n/).filter(x=>x.trim()) : [];
   ["g1","g2","g3"].forEach(id=>{
     const s=document.getElementById(id);
-    s.innerHTML="<option value=''>— wählen —</option>";
+    s.innerHTML="<option value=''>Bitte wählen …</option>";
     g.forEach(x=>{
       const o=document.createElement("option");
-      o.value=o.textContent=x;
+      o.value=o.textContent=x.trim();
       s.appendChild(o);
     });
-    s.onchange=render;
   });
 }
 
-function render(){
-  document.getElementById("groups").innerHTML="";
-  [1,2,3].forEach(n=>{
-    const g=document.getElementById("g"+n).value;
-    if(!g) return;
-    const c=document.createElement("div");
-    c.className="card";
-    c.innerHTML=`
-    <h2>${g}</h2>
-    <table>
-    <thead><tr>
-    <th>#</th><th>Name</th><th>Jahrgang</th><th>Sportgerät</th>
-    <th>Resultat</th><th>Zuschlag</th><th>Total</th>
-    </tr></thead>
+/* ================= TABELLEN ================= */
+function createGroup(n){
+  const c=document.createElement("div");
+  c.className="card";
+  c.id="group"+n;
+  c.innerHTML=`
+  <h2 id="title${n}">Gruppe ${n}</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th><th>Name</th><th>Jahrgang</th>
+        <th>Sportgerät</th><th>Resultat</th>
+        <th>Zuschlag</th><th>Total</th>
+      </tr>
+    </thead>
     <tbody></tbody>
     <tfoot>
-    <tr class="sum"><td colspan="4">Summen</td>
-    <td id="sr${n}">0</td><td id="sz${n}">0</td><td id="st${n}">0</td>
-    </tr></tfoot></table>`;
-    const tb=c.querySelector("tbody");
-    for(let i=1;i<=5;i++){
-      tb.innerHTML+=`
       <tr>
+        <td colspan="4">Summen</td>
+        <td id="sr${n}" class="sumcell">0</td>
+        <td id="sz${n}" class="sumcell">0</td>
+        <td id="st${n}" class="sumcell">0</td>
+      </tr>
+    </tfoot>
+  </table>`;
+  const tb=c.querySelector("tbody");
+  for(let i=1;i<=5;i++){
+    tb.innerHTML+=`
+    <tr>
       <td>${i}</td>
       <td><input></td>
       <td><input type="number"></td>
       <td>
         <select onchange="calc(${n})">
-        <option></option>
-        ${Object.keys(ZUSCHLAG_MAP).map(k=>`<option>${k}</option>`).join("")}
+          <option value="">–</option>
+          <option>Karabiner</option>
+          <option>57/02</option>
+          <option>57/03</option>
+          <option>90BK</option>
+          <option>90RK</option>
         </select>
       </td>
       <td><input type="number" oninput="calc(${n})"></td>
       <td class="z">0</td>
       <td class="t">0</td>
-      </tr>`;
-    }
-    document.getElementById("groups").appendChild(c);
-  });
+    </tr>`;
+  }
+  document.getElementById("groups").appendChild(c);
 }
 
+/* ================= BERECHNUNG ================= */
 function calc(n){
-  let sr=0,sz=0,st=0;
-  document.querySelectorAll(`#groups .card:nth-child(${n}) tbody tr`).forEach(tr=>{
-    const sel=tr.querySelector("select").value;
-    const res=+tr.querySelector("input[type=number]").value||0;
-    const z=ZUSCHLAG_MAP[sel]||0;
-    tr.querySelector(".z").textContent=z;
-    tr.querySelector(".t").textContent=res+z;
-    sr+=res; sz+=z; st+=res+z;
-  });
+  let sr=0, sz=0, st=0;
+
+  document
+    .querySelectorAll(`#group${n} tbody tr`)
+    .forEach(tr=>{
+      const select=tr.querySelector("select");
+      const inputs=tr.querySelectorAll("input");
+      const res=Number(inputs[2].value)||0;
+      const z=ZUSCHLAG_MAP[select.value]||0;
+
+      tr.querySelector(".z").textContent=z;
+      tr.querySelector(".t").textContent=res+z;
+
+      sr+=res; sz+=z; st+=res+z;
+    });
+
   document.getElementById("sr"+n).textContent=sr;
   document.getElementById("sz"+n).textContent=sz;
   document.getElementById("st"+n).textContent=st;
+
   calcWinner();
 }
 
-function calcWinner(){
-  const totals=[];
+/* ================= TITEL ================= */
+function updateTitles(){
   [1,2,3].forEach(n=>{
-    const g=document.getElementById("g"+n).value;
-    if(!g) return;
-    totals.push({g,total:+document.getElementById("st"+n).textContent});
+    const v=document.getElementById("g"+n).value;
+    document.getElementById("title"+n).textContent=
+      v?`Gruppe ${n}: ${v}`:`Gruppe ${n}`;
   });
-  totals.sort((a,b)=>b.total-a.total);
-  if(totals.length<2) return;
-  document.getElementById("winner").textContent =
-    "🏆 Sieger: "+totals[0].g+" / "+totals[1].g;
 }
 
+/* ================= SIEGER ================= */
+function calcWinner(){
+  const arr=[
+    {n:1,v:+st1.textContent},
+    {n:2,v:+st2.textContent},
+    {n:3,v:+st3.textContent}
+  ].filter(x=>x.v>0);
+
+  const w=document.getElementById("winner");
+  if(!arr.length){w.textContent="Noch keine Resultate";return}
+
+  arr.sort((a,b)=>b.v-a.v);
+  if(arr.length>1 && arr[0].v===arr[1].v){
+    w.className="winner draw";
+    w.textContent="Unentschieden ("+arr[0].v+")";
+  }else{
+    w.className="winner win";
+    w.textContent="🏆 Sieger: Gruppe "+arr[0].n+" ("+arr[0].v+")";
+  }
+}
+
+/* ================= START ================= */
 loadGroups();
+createGroup(1);
+createGroup(2);
+createGroup(3);
 </script>
+
 </body>
 </html>
