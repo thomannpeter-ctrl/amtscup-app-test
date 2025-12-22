@@ -131,15 +131,24 @@ function createTable(n){
 }
 createTable(1);createTable(2);createTable(3);
 
+/* === Titel aktualisieren === */
+[g1,g2,g3].forEach((s,i)=>{
+  s.addEventListener("change",()=>{
+    document.getElementById("t"+(i+1)).textContent =
+      s.value ? `Gruppe ${i+1}: ${s.value}` : `Gruppe ${i+1}`;
+  });
+});
+
+/* === Berechnung === */
 function calc(){
   [1,2,3].forEach(n=>{
     let sr=0,sz=0,st=0;
     document.querySelectorAll(`#tab${n} tbody tr`).forEach(tr=>{
       const r=+tr.querySelector(".res").value||0;
       const z=zus(tr.querySelector(".gear").value);
-      tr.querySelector(".z").textContent=r?z:0;
-      tr.querySelector(".t").textContent=r?r+z:0;
-      sr+=r; sz+=r?z:0; st+=r?r+z:0;
+      tr.querySelector(".z").textContent=z;
+      tr.querySelector(".t").textContent=r+z;
+      sr+=r; sz+=z; st+=r+z;
     });
     document.querySelector(`#tab${n} .sr`).textContent=sr;
     document.querySelector(`#tab${n} .sz`).textContent=sz;
@@ -150,7 +159,7 @@ calc();
 
 /* === SENDEN === */
 function sendResult(){
-  const payload=[];
+  const entries=[];
   [1,2,3].forEach(n=>{
     const g=document.getElementById("g"+n).value;
     if(!g) return;
@@ -158,7 +167,7 @@ function sendResult(){
       const name=tr.querySelector(".name").value;
       const res=tr.querySelector(".res").value;
       if(!name&&!res) return;
-      payload.push({
+      entries.push({
         chef:chef.value,
         email:email.value,
         gruppe:g,
@@ -174,8 +183,8 @@ function sendResult(){
 
   fetch(SCRIPT_URL,{
     method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({entries:payload})
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:"payload="+encodeURIComponent(JSON.stringify({entries}))
   });
 
   alert("Resultat gesendet ✅");
