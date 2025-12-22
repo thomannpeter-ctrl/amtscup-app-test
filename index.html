@@ -1,206 +1,25 @@
-<!doctype html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<title>Amtscup – Cup-Duell</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+function doPost(e) {
+  const data = JSON.parse(e.parameter.payload);
+  const entries = data.entries;
 
-<style>
-*{box-sizing:border-box}
-body{font-family:system-ui,sans-serif;background:#eef2f7;margin:0;padding:1rem;color:#111827}
-.container{max-width:1100px;margin:auto}
-.card{background:#fff;border-radius:14px;padding:1rem 1.25rem;margin-bottom:1rem;box-shadow:0 4px 10px rgba(0,0,0,.08)}
-h1{color:#1e3a8a;margin:.25rem 0 1rem}
-h3{margin:.25rem 0 .75rem;color:#1d4ed8}
-.row{display:flex;gap:.75rem;flex-wrap:wrap}
-.field{flex:1;min-width:220px}
-label{display:block;font-size:.8rem;font-weight:700;color:#374151;margin-bottom:.25rem}
-input,select{width:100%;padding:.45rem;border-radius:8px;border:1px solid #cbd5f5;background:#f9fafb}
+  let body = "Amtscup – Resultate\n\n";
+  body += "Gruppenchef: " + entries[0].chef + "\n\n";
 
-table{width:100%;border-collapse:collapse;font-size:.9rem}
-th,td{border:1px solid #e5e7eb;padding:.35rem;text-align:center}
-th{background:#dbeafe}
-.sumrow td{background:#f3f4f6;font-weight:800}
-
-button{width:100%;padding:1rem;border:none;border-radius:999px;background:#2563eb;color:#fff;font-size:1rem;cursor:pointer}
-
-/* Tabellen einklappen */
-.groupTable{display:none}
-
-@media(max-width:768px){
-  .row{flex-direction:column}
-  table{display:block;overflow-x:auto;white-space:nowrap}
-}
-</style>
-</head>
-
-<body>
-<div class="container">
-<h1>Amtscup – Cup-Duell</h1>
-
-<div class="card">
-<h3>1. Gruppenchef</h3>
-<div class="row">
-<div class="field">
-  <label>Name</label>
-  <input id="chef">
-</div>
-</div>
-</div>
-
-<!-- feste Empfänger-Mail -->
-<input type="hidden" id="email" value="thomannpeter@bluewin.ch">
-
-<div class="card">
-<h3>2. Gruppenauswahl</h3>
-<div class="row">
-<div class="field"><label>Gruppe 1 *</label><select id="g1"></select></div>
-<div class="field"><label>Gruppe 2 *</label><select id="g2"></select></div>
-<div class="field"><label>Gruppe 3</label><select id="g3"></select></div>
-</div>
-</div>
-
-<div id="tables"></div>
-
-<div class="card">
-<button onclick="sendResult()">📧 Resultat senden</button>
-</div>
-</div>
-
-<script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzq8H0p6njHu3nhhJFR3OsV8D6nZWSjijZMLVPx2AlNJCbJdjgbvdmUaEVHd8yFEhf38g/exec";
-
-/* === Gruppen laden === */
-async function loadGroups(){
-  const r = await fetch("gruppen.txt?ts="+Date.now());
-  const g = (await r.text()).split(/\r?\n/).filter(x=>x.trim());
-  [g1,g2,g3].forEach(s=>{
-    s.innerHTML="<option value=''>Bitte wählen…</option>";
-    g.forEach(x=>{
-      const o=document.createElement("option");
-      o.value=o.textContent=x;
-      s.appendChild(o);
-    });
-  });
-}
-loadGroups();
-
-/* === Sportgeräte === */
-const GERAETE = [
-  {n:"",z:0},{n:"Standard",z:0},{n:"Freigewehr",z:0},
-  {n:"Karabiner",z:4},{n:"57/02",z:8},{n:"57/03",z:4},
-  {n:"90BK",z:4},{n:"90RK",z:4}
-];
-const zus = n => (GERAETE.find(g=>g.n===n)||{z:0}).z;
-
-/* === Tabellen === */
-function createTable(n){
-  const d=document.createElement("div");
-  d.className="card groupTable";
-  d.id="group"+n;
-  d.innerHTML=`
-  <h3 id="t${n}">Gruppe ${n}</h3>
-  <table id="tab${n}">
-  <thead><tr>
-  <th>#</th><th>Name</th><th>Jahrgang</th><th>Sportgerät</th>
-  <th>Resultat</th><th>Z</th><th>Total</th>
-  </tr></thead><tbody></tbody>
-  <tfoot><tr class="sumrow">
-  <td colspan="4">Summe</td>
-  <td class="sr">0</td><td class="sz">0</td><td class="st">0</td>
-  </tr></tfoot></table>`;
-  const tb=d.querySelector("tbody");
-
-  for(let i=1;i<=5;i++){
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
-    <td>${i}</td>
-    <td><input class="name"></td>
-    <td><input class="year" type="number"></td>
-    <td><select class="gear"></select></td>
-    <td><input class="res" type="number" min="0" max="150"></td>
-    <td class="z">0</td><td class="t">0</td>`;
-    tb.appendChild(tr);
-
-    const sel=tr.querySelector(".gear");
-    GERAETE.forEach(g=>{
-      const o=document.createElement("option");
-      o.value=o.textContent=g.n;
-      sel.appendChild(o);
-    });
-    sel.onchange=calc;
-    tr.querySelector(".res").oninput=calc;
-  }
-  tables.appendChild(d);
-}
-
-createTable(1);createTable(2);createTable(3);
-
-/* === Gruppe wählen → Tabelle anzeigen === */
-[g1,g2,g3].forEach((s,i)=>{
-  s.addEventListener("change",()=>{
-    const box=document.getElementById("group"+(i+1));
-    const title=document.getElementById("t"+(i+1));
-    if(s.value){
-      box.style.display="block";
-      title.textContent=`Gruppe ${i+1}: ${s.value}`;
-    }else{
-      box.style.display="none";
-      title.textContent=`Gruppe ${i+1}`;
-    }
-    calc();
-  });
-});
-
-/* === Berechnung === */
-function calc(){
-  [1,2,3].forEach(n=>{
-    let sr=0,sz=0,st=0;
-    document.querySelectorAll(`#tab${n} tbody tr`).forEach(tr=>{
-      const r=+tr.querySelector(".res").value||0;
-      const z=zus(tr.querySelector(".gear").value);
-      tr.querySelector(".z").textContent=z;
-      tr.querySelector(".t").textContent=r+z;
-      sr+=r; sz+=z; st+=r+z;
-    });
-    document.querySelector(`#tab${n} .sr`).textContent=sr;
-    document.querySelector(`#tab${n} .sz`).textContent=sz;
-    document.querySelector(`#tab${n} .st`).textContent=st;
-  });
-}
-
-/* === SENDEN === */
-function sendResult(){
-  const entries=[];
-  [1,2,3].forEach(n=>{
-    const g=document.getElementById("g"+n).value;
-    if(!g) return;
-    document.querySelectorAll(`#tab${n} tbody tr`).forEach(tr=>{
-      const name=tr.querySelector(".name").value;
-      const res=tr.querySelector(".res").value;
-      if(!name&&!res) return;
-      entries.push({
-        chef:chef.value,
-        email:email.value,
-        gruppe:g,
-        name:name,
-        jahrgang:tr.querySelector(".year").value,
-        sportgeraet:tr.querySelector(".gear").value,
-        resultat:res,
-        zuschlag:tr.querySelector(".z").textContent,
-        total:tr.querySelector(".t").textContent
-      });
-    });
+  entries.forEach(r=>{
+    body += "Gruppe: " + r.gruppe + "\n";
+    body += "Name: " + r.name + "\n";
+    body += "Gerät: " + r.sportgeraet + "\n";
+    body += "Resultat: " + r.resultat + "\n";
+    body += "Zuschlag: " + r.zuschlag + "\n";
+    body += "Total: " + r.total + "\n";
+    body += "----------------------\n";
   });
 
-  fetch(SCRIPT_URL,{
-    method:"POST",
-    headers:{"Content-Type":"application/x-www-form-urlencoded"},
-    body:"payload="+encodeURIComponent(JSON.stringify({entries}))
+  MailApp.sendEmail({
+    to: "thomannpeter@bluewin.ch",
+    subject: "Amtscup Resultate",
+    body: body
   });
 
-  alert("Resultat gesendet ✅");
+  return ContentService.createTextOutput("OK");
 }
-</script>
-</body>
-</html>
