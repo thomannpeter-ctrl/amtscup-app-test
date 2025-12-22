@@ -15,7 +15,7 @@ h2{color:#1d4ed8;margin:.5rem 0}
 .row{display:flex;gap:.75rem;flex-wrap:wrap}
 .field{flex:1;min-width:200px}
 label{font-size:.8rem;font-weight:600}
-input,select{width:100%;padding:.5rem;border-radius:8px;border:1px solid #cbd5f5}
+input,select{width:100%;padding:.45rem;border-radius:8px;border:1px solid #cbd5f5}
 
 table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:.5rem}
 th,td{border:1px solid #e5e7eb;padding:.35rem;text-align:center}
@@ -106,15 +106,15 @@ button{
 const SCRIPT_URL = "HIER_DEINE_WEBAPP_URL_EINFÜGEN";
 
 /* ================= SPORTGERÄTE ================= */
-const SPORTGERAETE = [
-  {name:"",z:0},
-  {name:"Standard",z:0},
-  {name:"Karabiner",z:4},
-  {name:"57/02",z:8},
-  {name:"57/03",z:4},
-  {name:"90BK",z:4},
-  {name:"90RK",z:4}
-];
+const SPORTGERAETE = {
+  "": 0,
+  "Standard": 0,
+  "Karabiner": 4,
+  "57/02": 8,
+  "57/03": 4,
+  "90BK": 4,
+  "90RK": 4
+};
 
 /* ================= GRUPPEN ================= */
 async function loadGroups(){
@@ -149,12 +149,15 @@ function createGroup(n){
       <tbody></tbody>
       <tfoot>
         <tr>
-          <th colspan="6">Summe</th>
-          <th id="sum${n}" class="sum">0</th>
+          <th colspan="4">Summen</th>
+          <th id="sumRes${n}" class="sum">0</th>
+          <th id="sumZ${n}" class="sum">0</th>
+          <th id="sumTot${n}" class="sum">0</th>
         </tr>
       </tfoot>
     </table>`;
   const tb=c.querySelector("tbody");
+
   for(let i=1;i<=5;i++){
     tb.innerHTML+=`
       <tr>
@@ -162,34 +165,41 @@ function createGroup(n){
         <td><input></td>
         <td><input type="number"></td>
         <td>
-          <select onchange="recalc(this)">
-            ${SPORTGERAETE.map(g=>`<option>${g.name}</option>`).join("")}
+          <select onchange="recalcRow(this)">
+            ${Object.keys(SPORTGERAETE).map(g=>`<option>${g}</option>`).join("")}
           </select>
         </td>
-        <td><input type="number" oninput="recalc(this)"></td>
-        <td class="z"></td>
-        <td class="t"></td>
+        <td><input type="number" oninput="recalcRow(this)"></td>
+        <td class="z">0</td>
+        <td class="t">0</td>
       </tr>`;
   }
   document.getElementById("groups").appendChild(c);
 }
 
-function recalc(el){
+function recalcRow(el){
   const tr=el.closest("tr");
+  const geraet=tr.children[3].firstChild.value;
   const res=+tr.children[4].firstChild.value||0;
-  const g=SPORTGERAETE.find(x=>x.name===tr.children[3].firstChild.value);
-  const z=g?g.z:0;
-  tr.children[5].textContent=z||"";
-  tr.children[6].textContent=res+z||"";
+  const z=SPORTGERAETE[geraet]||0;
+
+  tr.children[5].textContent=z;
+  tr.children[6].textContent=res+z;
+
   calcAll();
 }
 
 function calcAll(){
   [1,2,3].forEach(n=>{
-    let s=0;
-    document.querySelectorAll(`#group${n} .t`).forEach(c=>s+=+c.textContent||0);
-    const e=document.getElementById("sum"+n);
-    if(e)e.textContent=s;
+    let r=0,z=0,t=0;
+    document.querySelectorAll(`#group${n} tbody tr`).forEach(tr=>{
+      r+=+tr.children[4].firstChild.value||0;
+      z+=+tr.children[5].textContent||0;
+      t+=+tr.children[6].textContent||0;
+    });
+    document.getElementById("sumRes"+n).textContent=r;
+    document.getElementById("sumZ"+n).textContent=z;
+    document.getElementById("sumTot"+n).textContent=t;
   });
   updateWinner();
 }
@@ -205,15 +215,15 @@ function updateWinner(){
   const data=[];
   [1,2,3].forEach(n=>{
     const g=document.getElementById("g"+n).value;
-    const s=+document.getElementById("sum"+n)?.textContent||0;
-    if(g&&s)data.push({g,s});
+    const t=+document.getElementById("sumTot"+n).textContent||0;
+    if(g&&t)data.push({g,t});
   });
   if(data.length<2)return;
-  data.sort((a,b)=>b.s-a.s);
+  data.sort((a,b)=>b.t-a.t);
   document.getElementById("winnerBox").innerHTML=
     data.length===2
-    ?`🏆 Sieger: ${data[0].g} (${data[0].s})`
-    :`🥇 ${data[0].g} (${data[0].s})<br>🥈 ${data[1].g} (${data[1].s})`;
+    ?`🏆 Sieger: ${data[0].g} (${data[0].t})`
+    :`🥇 ${data[0].g} (${data[0].t})<br>🥈 ${data[1].g} (${data[1].t})`;
 }
 
 /* ================= SENDEN ================= */
@@ -226,7 +236,7 @@ function sendResult(){
       const name=tr.children[1].firstChild.value;
       const jahr=tr.children[2].firstChild.value;
       const res=tr.children[4].firstChild.value;
-      const sum=document.getElementById("sum"+n).textContent;
+      const sum=document.getElementById("sumTot"+n).textContent;
       if(!name&&!res)return;
       entries.push({
         chef:chef.value,
@@ -239,6 +249,7 @@ function sendResult(){
       });
     });
   });
+
   fetch(SCRIPT_URL,{
     method:"POST",
     headers:{"Content-Type":"application/x-www-form-urlencoded"},
