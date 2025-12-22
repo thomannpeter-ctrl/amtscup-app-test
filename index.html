@@ -21,11 +21,12 @@ table{width:100%;border-collapse:collapse;font-size:.9rem}
 th,td{border:1px solid #e5e7eb;padding:.35rem;text-align:center}
 th{background:#dbeafe}
 .sumrow td{background:#f3f4f6;font-weight:800}
-.small{width:110px}
-.tiny{width:90px}
 
 .winner{background:#dcfce7;padding:.6rem 1rem;border-radius:999px;font-weight:800;display:inline-block}
 button{width:100%;padding:1rem;border:none;border-radius:999px;background:#2563eb;color:#fff;font-size:1rem;cursor:pointer}
+
+/* 👇 Tabellen einklappen */
+.groupTable{display:none}
 
 @media(max-width:768px){
   .row{flex-direction:column}
@@ -96,7 +97,8 @@ const zus = n => (GERAETE.find(g=>g.n===n)||{z:0}).z;
 /* === Tabellen === */
 function createTable(n){
   const d=document.createElement("div");
-  d.className="card";
+  d.className="card groupTable";
+  d.id="group"+n;
   d.innerHTML=`
   <h3 id="t${n}">Gruppe ${n}</h3>
   <table id="tab${n}">
@@ -109,6 +111,7 @@ function createTable(n){
   <td class="sr">0</td><td class="sz">0</td><td class="st">0</td>
   </tr></tfoot></table>`;
   const tb=d.querySelector("tbody");
+
   for(let i=1;i<=5;i++){
     const tr=document.createElement("tr");
     tr.innerHTML=`
@@ -119,23 +122,34 @@ function createTable(n){
     <td><input class="res" type="number" min="0" max="150"></td>
     <td class="z">0</td><td class="t">0</td>`;
     tb.appendChild(tr);
+
     const sel=tr.querySelector(".gear");
     GERAETE.forEach(g=>{
       const o=document.createElement("option");
       o.value=o.textContent=g.n;
       sel.appendChild(o);
     });
-    sel.onchange=calc; tr.querySelector(".res").oninput=calc;
+    sel.onchange=calc;
+    tr.querySelector(".res").oninput=calc;
   }
   tables.appendChild(d);
 }
+
 createTable(1);createTable(2);createTable(3);
 
-/* === Titel aktualisieren === */
+/* === Gruppe wählen → Tabelle anzeigen === */
 [g1,g2,g3].forEach((s,i)=>{
   s.addEventListener("change",()=>{
-    document.getElementById("t"+(i+1)).textContent =
-      s.value ? `Gruppe ${i+1}: ${s.value}` : `Gruppe ${i+1}`;
+    const box=document.getElementById("group"+(i+1));
+    const title=document.getElementById("t"+(i+1));
+    if(s.value){
+      box.style.display="block";
+      title.textContent=`Gruppe ${i+1}: ${s.value}`;
+    }else{
+      box.style.display="none";
+      title.textContent=`Gruppe ${i+1}`;
+    }
+    calc();
   });
 });
 
@@ -155,7 +169,6 @@ function calc(){
     document.querySelector(`#tab${n} .st`).textContent=st;
   });
 }
-calc();
 
 /* === SENDEN === */
 function sendResult(){
