@@ -1,3 +1,26 @@
+/* ================= GRUPPEN ANZEIGEN ================= */
+["g1","g2","g3"].forEach((id,idx)=>{
+  document.getElementById(id).addEventListener("change",()=>{
+    const n = idx+1;
+    const val = document.getElementById(id).value;
+
+    const box = document.getElementById("group"+n);
+    const title = document.getElementById("title"+n);
+
+    if(val){
+      box.style.display="block";
+      title.textContent = val;
+    }else{
+      box.style.display="none";
+    }
+    updateWinner();
+  });
+});
+
+/* beim Start alle Gruppen ausblenden */
+[1,2,3].forEach(n=>{
+  document.getElementById("group"+n).style.display="none";
+});
 <!doctype html>
 <html lang="de">
 <head>
