@@ -7,49 +7,17 @@
 
 <style>
 *{box-sizing:border-box}
-body{
-  font-family:system-ui,Arial,sans-serif;
-  background:#eef2f7;
-  margin:0;
-  padding:1rem;
-}
-.container{
-  max-width:1100px;
-  margin:0 auto;
-}
-.card{
-  background:#fff;
-  border-radius:14px;
-  padding:1rem 1.25rem;
-  margin-bottom:1rem;
-  box-shadow:0 4px 10px rgba(0,0,0,.08);
-}
+body{font-family:system-ui,sans-serif;background:#eef2f7;margin:0;padding:1rem}
+.container{max-width:1100px;margin:auto}
+.card{background:#fff;border-radius:14px;padding:1rem 1.25rem;margin-bottom:1rem;box-shadow:0 4px 10px rgba(0,0,0,.08)}
 h1{color:#1e3a8a}
-h3{margin-top:0}
-select,input{
-  width:100%;
-  padding:.5rem;
-  border-radius:8px;
-  border:1px solid #cbd5f5;
-  margin-bottom:.5rem;
-}
-button{
-  width:100%;
-  padding:1rem;
-  border:none;
-  border-radius:999px;
-  background:#2563eb;
-  color:white;
-  font-size:1rem;
-  cursor:pointer;
-}
-.winner{
-  background:#dcfce7;
-  padding:.6rem 1rem;
-  border-radius:999px;
-  font-weight:700;
-  display:inline-block;
-}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{border:1px solid #e5e7eb;padding:.4rem;text-align:center}
+th{background:#dbeafe}
+input,select{width:100%;padding:.4rem;border-radius:6px;border:1px solid #cbd5f5}
+.sum{font-weight:700;background:#f3f4f6}
+button{width:100%;padding:1rem;border:none;border-radius:999px;background:#2563eb;color:white;font-size:1rem}
+.winner{background:#dcfce7;padding:.5rem 1rem;border-radius:999px;font-weight:700}
 </style>
 </head>
 
@@ -71,66 +39,124 @@ button{
   <select id="g3"></select>
 </div>
 
+<div id="tables"></div>
+
 <div class="card">
   <h3>Sieger</h3>
   <div id="winner" class="winner">Noch keine Resultate</div>
 </div>
 
 <div class="card">
-  <button onclick="alert('Versand kommt im nächsten Schritt 👍')">
-    📧 Resultat senden
-  </button>
+  <button onclick="sendResult()">📧 Resultat senden</button>
 </div>
 
 </div>
 
 <script>
-/* ========= ABSOLUT STABILE GRUPPENLISTE ========= */
+/* ========= GRUPPEN ========= */
 const FALLBACK_GROUPS = [
  "1 Heim 1 A071 Worber Sportschützen Querschleger",
  "1 Gast 1 A001 Aareschützen Kiesen Oppligen Aare",
- "1 Gast 1 A037 Linden FS Innerbirrmoos",
- "2 Heim 1 A065 Trimstein Eichi FS Sius",
- "2 Gast 1 A028 Konolfingen SG Eiger",
- "3 Heim 1 A048 Oberthal MS Kapfwald",
- "3 Gast 1 A011 Bowil MS A-Team",
- "4 Heim 1 A056 Sportschützen Furth Kobra"
+ "1 Gast 1 A037 Linden FS Innerbirrmoos"
 ];
 
-/* ========= VERSUCH: GitHub laden ========= */
-const GITHUB_URL =
-"https://raw.githubusercontent.com/thomannpeter-ctrl/amtscup-app-test/main/gruppen.txt";
-
-function fillSelects(groups){
-  [g1,g2,g3].forEach((sel,i)=>{
-    sel.innerHTML = "<option value=''>Bitte wählen…</option>";
-    if(i===2){
-      const o=document.createElement("option");
-      o.value="";
-      o.textContent="keine 3. Gruppe";
-      sel.appendChild(o);
-    }
+function fillGroups(groups){
+  [g1,g2,g3].forEach((s,i)=>{
+    s.innerHTML="<option value=''>Bitte wählen…</option>";
+    if(i===2) s.innerHTML+="<option value=''>keine 3. Gruppe</option>";
     groups.forEach(g=>{
       const o=document.createElement("option");
       o.value=o.textContent=g;
-      sel.appendChild(o);
+      s.appendChild(o);
     });
   });
 }
+fillGroups(FALLBACK_GROUPS);
 
-/* ========= Laden mit Fallback ========= */
-fetch(GITHUB_URL)
-  .then(r=>r.ok ? r.text() : Promise.reject())
-  .then(txt=>{
-    const groups = txt.split(/\r?\n/).filter(l=>l.trim());
-    fillSelects(groups);
-    console.log("Gruppen aus GitHub geladen");
-  })
-  .catch(()=>{
-    fillSelects(FALLBACK_GROUPS);
-    console.warn("GitHub nicht erreichbar → Fallback aktiv");
+/* ========= SPORTGERÄTE ========= */
+const GERAETE = {
+ "":0,
+ "Standard":0,
+ "Freigewehr":0,
+ "Karabiner":4,
+ "57/02":8,
+ "57/03":4,
+ "90BK":4,
+ "90RK":4
+};
+
+/* ========= TABELLEN ========= */
+function createTable(n){
+  const d=document.createElement("div");
+  d.className="card";
+  d.innerHTML=`
+  <h3>Gruppe ${n}</h3>
+  <table>
+  <tr><th>#</th><th>Name</th><th>Jahrgang</th><th>Sportgerät</th><th>Resultat</th><th>Zuschlag</th><th>Total</th></tr>
+  ${[1,2,3,4,5].map(i=>`
+  <tr>
+    <td>${i}</td>
+    <td><input></td>
+    <td><input type="number" min="1900" max="2100"></td>
+    <td>
+      <select onchange="calc()">
+        ${Object.keys(GERAETE).map(g=>`<option>${g}</option>`).join("")}
+      </select>
+    </td>
+    <td><input type="number" min="0" max="150" oninput="calc()"></td>
+    <td class="z">0</td>
+    <td class="t">0</td>
+  </tr>`).join("")}
+  <tr class="sum"><td colspan="4">Summe</td><td class="sr">0</td><td class="sz">0</td><td class="st">0</td></tr>
+  </table>`;
+  tables.appendChild(d);
+}
+createTable(1);createTable(2);createTable(3);
+
+/* ========= BERECHNUNG ========= */
+function calc(){
+  document.querySelectorAll("table").forEach(tab=>{
+    let sr=0,sz=0,st=0;
+    tab.querySelectorAll("tr").forEach(r=>{
+      const res=r.querySelector("input[type=number]:last-of-type");
+      const sel=r.querySelector("select");
+      if(!res||!sel)return;
+      const rVal=+res.value||0;
+      const z=GERAETE[sel.value]||0;
+      r.querySelector(".z").textContent=z;
+      r.querySelector(".t").textContent=rVal+z;
+      sr+=rVal;sz+=z;st+=rVal+z;
+    });
+    tab.querySelector(".sr").textContent=sr;
+    tab.querySelector(".sz").textContent=sz;
+    tab.querySelector(".st").textContent=st;
   });
-</script>
+  updateWinner();
+}
 
+function updateWinner(){
+  const sums=[...document.querySelectorAll(".st")].map(x=>+x.textContent||0);
+  const max=Math.max(...sums);
+  if(max>0) winner.textContent="🏆 Sieger Total: "+max;
+}
+
+/* ========= SENDEN ========= */
+function sendResult(){
+  let body="AMTSCUP CUP-DUELL\n\n";
+  body+="Gruppenchef: "+chef.value+"\n";
+  body+="E-Mail: "+email.value+"\n\n";
+  document.querySelectorAll("table").forEach((t,i)=>{
+    body+="Gruppe "+(i+1)+"\n";
+    t.querySelectorAll("tr").forEach(r=>{
+      const i=r.querySelectorAll("input");
+      if(i.length>=2 && i[0].value){
+        body+=`${i[0].value};${i[1].value};${r.querySelector("select").value};${i[2].value};${r.querySelector(".z").textContent};${r.querySelector(".t").textContent}\n`;
+      }
+    });
+    body+="\n";
+  });
+  location.href="mailto:thomannpeter@bluewin.ch?subject=Amtscup Resultat&body="+encodeURIComponent(body);
+}
+</script>
 </body>
 </html>
