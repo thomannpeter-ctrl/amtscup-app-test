@@ -22,10 +22,9 @@ th,td{border:1px solid #e5e7eb;padding:.35rem;text-align:center}
 th{background:#dbeafe}
 .sumrow td{background:#f3f4f6;font-weight:800}
 
-.winner{background:#dcfce7;padding:.6rem 1rem;border-radius:999px;font-weight:800;display:inline-block}
 button{width:100%;padding:1rem;border:none;border-radius:999px;background:#2563eb;color:#fff;font-size:1rem;cursor:pointer}
 
-/* 👇 Tabellen einklappen */
+/* Tabellen einklappen */
 .groupTable{display:none}
 
 @media(max-width:768px){
@@ -42,10 +41,15 @@ button{width:100%;padding:1rem;border:none;border-radius:999px;background:#2563e
 <div class="card">
 <h3>1. Gruppenchef</h3>
 <div class="row">
-<div class="field"><label>Name</label><input id="chef"></div>
-<div class="field"><label>E-Mail</label><input id="email"></div>
+<div class="field">
+  <label>Name</label>
+  <input id="chef">
 </div>
 </div>
+</div>
+
+<!-- feste Empfänger-Mail -->
+<input type="hidden" id="email" value="thomannpeter@bluewin.ch">
 
 <div class="card">
 <h3>2. Gruppenauswahl</h3>
@@ -57,11 +61,6 @@ button{width:100%;padding:1rem;border:none;border-radius:999px;background:#2563e
 </div>
 
 <div id="tables"></div>
-
-<div class="card">
-<h3>Sieger</h3>
-<div id="winner" class="winner">Noch keine Resultate</div>
-</div>
 
 <div class="card">
 <button onclick="sendResult()">📧 Resultat senden</button>
