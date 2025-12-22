@@ -1,101 +1,105 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<title>Amtscup – Cup-Duell</title>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Amtscup – Cup-Duell</title>
 
 <style>
 body {
-  font-family: system-ui, Arial, sans-serif;
-  background:#f1f5f9;
   margin:0;
-  padding:20px;
+  font-family: system-ui, sans-serif;
+  background:#f1f5f9;
 }
-h1 { color:#1e40af; }
+.container {
+  max-width:1200px;
+  margin:auto;
+  padding:1rem;
+}
 .card {
   background:#fff;
-  border-radius:14px;
-  padding:16px;
-  margin-bottom:20px;
-  box-shadow:0 6px 16px rgba(0,0,0,.08);
+  border-radius:12px;
+  padding:1rem;
+  margin-bottom:1rem;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);
 }
-label { font-weight:600; font-size:.85rem; }
+h1 { color:#1e3a8a; }
+h2 { color:#2563eb; margin-bottom:.5rem; }
+label { font-size:.85rem; font-weight:600; }
 input, select {
-  width:100%;
-  padding:6px 8px;
+  padding:.5rem;
   border-radius:8px;
   border:1px solid #c7d2fe;
+  width:100%;
 }
 table {
   width:100%;
   border-collapse:collapse;
-  font-size:.85rem;
 }
 th, td {
   border:1px solid #e5e7eb;
-  padding:6px;
+  padding:.4rem;
   text-align:center;
 }
 th { background:#dbeafe; }
-tfoot td { background:#f3f4f6; font-weight:700; }
+tfoot td { font-weight:700; background:#f3f4f6; }
 button {
+  width:100%;
+  padding:.8rem;
+  border:none;
+  border-radius:999px;
   background:#2563eb;
   color:#fff;
-  border:none;
-  padding:14px;
-  border-radius:999px;
   font-size:1rem;
-  width:100%;
   cursor:pointer;
 }
 .winner {
-  padding:10px;
+  padding:.7rem;
   border-radius:999px;
+  background:#dcfce7;
   font-weight:700;
 }
-.winner.none { background:#e5e7eb; }
-.winner.ok { background:#dcfce7; color:#166534; }
+
+@media(max-width:768px){
+  table{display:block;overflow-x:auto;white-space:nowrap;}
+}
 </style>
 </head>
 
 <body>
+<div class="container">
 
 <h1>Amtscup – Cup-Duell</h1>
 
 <div class="card">
-<h3>1. Gruppenchef</h3>
+<h2>1. Gruppenchef</h2>
 <input id="chefName" placeholder="Name Gruppenchef">
-<br><br>
 <input id="chefMail" placeholder="E-Mail">
 </div>
 
 <div class="card">
-<h3>2. Gruppenauswahl</h3>
-<select id="g1"></select><br><br>
-<select id="g2"></select><br><br>
+<h2>2. Gruppenauswahl</h2>
+<select id="g1"></select>
+<select id="g2"></select>
 <select id="g3"></select>
 </div>
 
 <div id="groups"></div>
 
 <div class="card">
-<h3>Sieger</h3>
-<div id="winner" class="winner none">Noch keine Resultate</div>
+<h2>Sieger</h2>
+<div id="winner" class="winner">Noch keine Resultate</div>
 </div>
 
-<div class="card">
 <button onclick="sendMail()">📧 Resultat senden</button>
+
 </div>
 
 <script>
-/* ================= KONFIG ================= */
-const RESULT_MAIL = "thomannpeter@bluewin.ch";
-
 const SPORTGERAETE = [
   ["",0],
   ["Standard",0],
-  ["FG",0],
+  ["Freigewehr",0],
   ["Karabiner",4],
   ["57/02",8],
   ["57/03",4],
@@ -103,138 +107,107 @@ const SPORTGERAETE = [
   ["90RK",4]
 ];
 
-const FALLBACK_GROUPS = [
- "1 Heim 1 A071 Worber Sportschützen Querschleger",
- "1 Gast 1 A001 Aareschützen Kiesen Oppligen Aare",
- "1 Gast 1 A037 Linden FS Innerbirrmoos"
-];
+let groups = [];
 
-let groupNames = ["","",""];
-
-/* ================= GRUPPEN LADEN ================= */
-fetch("gruppen.txt?ts="+Date.now(),{cache:"no-store"})
-.then(r=>r.ok?r.text():Promise.reject())
-.then(text=>initGroups(text.split(/\r?\n/)))
-.catch(()=>initGroups(FALLBACK_GROUPS));
-
-function initGroups(list){
-  list=list.map(l=>l.trim()).filter(l=>l);
-  ["g1","g2","g3"].forEach(id=>{
-    const s=document.getElementById(id);
-    s.innerHTML="<option value=''>Bitte wählen…</option>";
-    list.forEach(g=>{
+async function loadGroups(){
+  const res = await fetch("gruppen.txt?"+Date.now());
+  const txt = await res.text();
+  groups = txt.split("\n").map(l=>l.trim()).filter(Boolean);
+  [g1,g2,g3].forEach(s=>{
+    s.innerHTML='<option value="">Bitte wählen…</option>';
+    groups.forEach(g=>{
       const o=document.createElement("option");
       o.value=o.textContent=g;
       s.appendChild(o);
     });
-    s.onchange=renderTables;
+    s.onchange=renderGroups;
   });
 }
 
-/* ================= TABELLEN ================= */
-function renderTables(){
-  const c=document.getElementById("groups");
-  c.innerHTML="";
-  groupNames=[
-    g1.value,
-    g2.value,
-    g3.value
-  ];
-  groupNames.forEach((g,i)=>{
-    if(!g) return;
-    c.appendChild(makeTable(i+1,g));
-  });
-  calc();
+function renderGroups(){
+  const list=[g1.value,g2.value,g3.value].filter(Boolean);
+  const wrap=document.getElementById("groups");
+  wrap.innerHTML="";
+  list.forEach((name,i)=>wrap.appendChild(groupTable(name,i+1)));
 }
 
-function makeTable(n,name){
-  const d=document.createElement("div");
-  d.className="card";
-  d.innerHTML=`<h3>Gruppe ${n}: ${name}</h3>
-  <table>
-  <thead><tr>
-  <th>#</th><th>Name</th><th>Jahrgang</th><th>Sportgerät</th>
-  <th>Resultat</th><th>Zuschlag</th><th>Total</th>
-  </tr></thead>
-  <tbody>
-  ${[1,2,3,4,5].map(i=>row(n,i)).join("")}
-  </tbody>
-  <tfoot><tr>
-  <td colspan="4">Summe</td>
-  <td id="r${n}">0</td>
-  <td id="z${n}">0</td>
-  <td id="t${n}">0</td>
-  </tr></tfoot>
-  </table>`;
-  return d;
-}
-
-function row(g,i){
-  return `<tr>
-  <td>${i}</td>
-  <td><input></td>
-  <td><input></td>
-  <td><select onchange="calc()">
-    ${SPORTGERAETE.map(s=>`<option value="${s[1]}">${s[0]}</option>`).join("")}
-  </select></td>
-  <td><input type="number" oninput="calc()"></td>
-  <td>0</td><td>0</td>
-  </tr>`;
-}
-
-/* ================= BERECHNUNG ================= */
-function calc(){
-  let totals=[];
-  document.querySelectorAll(".card table").forEach((t,i)=>{
-    let sr=0,sz=0,st=0;
-    t.querySelectorAll("tbody tr").forEach(r=>{
-      const res=+r.cells[4].firstChild.value||0;
-      const zus=+r.cells[3].firstChild.value||0;
-      r.cells[5].textContent=zus;
-      r.cells[6].textContent=res+zus;
-      sr+=res; sz+=zus; st+=res+zus;
+function groupTable(name,idx){
+  const card=document.createElement("div");
+  card.className="card";
+  card.innerHTML=`<h2>Gruppe ${idx}: ${name}</h2>
+<table>
+<thead><tr>
+<th>#</th><th>Name</th><th>Jahrgang</th><th>Sportgerät</th>
+<th>Resultat</th><th>Zuschlag</th><th>Total</th>
+</tr></thead>
+<tbody></tbody>
+<tfoot><tr><td colspan="4">Summe</td>
+<td class="sr">0</td><td class="sz">0</td><td class="st">0</td></tr></tfoot>
+</table>`;
+  const tb=card.querySelector("tbody");
+  for(let i=1;i<=5;i++){
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${i}</td>
+<td><input></td>
+<td><input type="number"></td>
+<td><select></select></td>
+<td><input type="number"></td>
+<td class="z">0</td>
+<td class="t">0</td>`;
+    const sel=tr.querySelector("select");
+    SPORTGERAETE.forEach(g=>{
+      const o=document.createElement("option");
+      o.value=g[0]; o.textContent=g[0];
+      sel.appendChild(o);
     });
-    r=document.getElementById("r"+(i+1)); if(r)r.textContent=sr;
-    z=document.getElementById("z"+(i+1)); if(z)z.textContent=sz;
-    tt=document.getElementById("t"+(i+1)); if(tt)tt.textContent=st;
-    totals.push({name:groupNames[i],total:st});
-  });
-  showWinner(totals.filter(t=>t.total>0));
-}
-
-function showWinner(arr){
-  const w=document.getElementById("winner");
-  if(!arr.length){ w.textContent="Noch keine Resultate"; return;}
-  arr.sort((a,b)=>b.total-a.total);
-  if(arr.length===2){
-    w.textContent="🏆 Sieger: "+arr[0].name+" ("+arr[0].total+")";
-  } else {
-    w.textContent="🏆 Sieger: "+arr[0].name+" & "+arr[1].name;
+    sel.onchange=()=>calc(card);
+    tr.querySelectorAll("input").forEach(i=>i.oninput=()=>calc(card));
+    tb.appendChild(tr);
   }
-  w.className="winner ok";
+  return card;
 }
 
-/* ================= MAIL ================= */
+function calc(card){
+  let sr=0,sz=0,st=0;
+  card.querySelectorAll("tbody tr").forEach(tr=>{
+    const r=+tr.children[4].querySelector("input").value||0;
+    const g=tr.children[3].querySelector("select").value;
+    const z=SPORTGERAETE.find(x=>x[0]==g)?.[1]||0;
+    tr.querySelector(".z").textContent=z;
+    tr.querySelector(".t").textContent=r+z;
+    sr+=r; sz+=z; st+=r+z;
+  });
+  card.querySelector(".sr").textContent=sr;
+  card.querySelector(".sz").textContent=sz;
+  card.querySelector(".st").textContent=st;
+  updateWinner();
+}
+
+function updateWinner(){
+  const sums=[...document.querySelectorAll(".st")].map(e=>+e.textContent);
+  if(!sums.length) return;
+  const max=Math.max(...sums);
+  const winners=sums.map((v,i)=>v==max?`Gruppe ${i+1}`:null).filter(Boolean);
+  winner.textContent = winners.join(" & ")+" ("+max+")";
+}
+
 function sendMail(){
   let body="AMTSCUP CUP-DUELL\n\n";
   body+="Gruppenchef: "+chefName.value+"\n";
   body+="E-Mail: "+chefMail.value+"\n\n";
-
   document.querySelectorAll(".card table").forEach((t,i)=>{
-    body+="Gruppe "+(i+1)+": "+groupNames[i]+"\n";
-    t.querySelectorAll("tbody tr").forEach(r=>{
-      const name=r.cells[1].firstChild.value;
-      if(!name) return;
-      body+=`${name}; ${r.cells[2].firstChild.value}; ${r.cells[3].firstChild.options[r.cells[3].firstChild.selectedIndex].text}; ${r.cells[4].firstChild.value}; Zuschlag ${r.cells[5].textContent}; Total ${r.cells[6].textContent}\n`;
+    body+="Gruppe "+(i+1)+":\n";
+    t.querySelectorAll("tbody tr").forEach(tr=>{
+      const n=tr.children[1].querySelector("input").value;
+      if(!n) return;
+      body+=`${n}; ${tr.children[2].querySelector("input").value}; ${tr.children[3].querySelector("select").value}; ${tr.children[4].querySelector("input").value}; Zuschlag ${tr.querySelector(".z").textContent}; Total ${tr.querySelector(".t").textContent}\n`;
     });
-    body+="Summe: "+document.getElementById("t"+(i+1)).textContent+"\n\n";
+    body+="Summe Total: "+t.querySelector(".st").textContent+"\n\n";
   });
-
-  location.href=
-   "mailto:"+RESULT_MAIL+
-   "?subject="+encodeURIComponent("Amtscup Resultat")+
-   "&body="+encodeURIComponent(body);
+  location.href="mailto:thomannpeter@bluewin.ch?subject=Amtscup Resultat&body="+encodeURIComponent(body);
 }
+
+loadGroups();
 </script>
 </body>
 </html>
