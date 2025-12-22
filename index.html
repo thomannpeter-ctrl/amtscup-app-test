@@ -41,7 +41,7 @@ button{
 
 .winner{
   padding:.7rem;border-radius:999px;
-  font-weight:600
+  font-weight:700
 }
 .winner-ok{background:#dcfce7;color:#166534}
 .winner-none{background:#e5e7eb;color:#374151}
@@ -104,6 +104,11 @@ const SPORTGERAETE=[
   {n:"90RK",z:4}
 ];
 
+function zuschlagFor(geraet){
+  const g = SPORTGERAETE.find(x=>x.n===geraet);
+  return g ? g.z : 0;
+}
+
 /* ================= GRUPPEN LADEN ================= */
 async function loadGroups(){
   const r=await fetch("gruppen.txt?ts="+Date.now(),{cache:"no-store"});
@@ -135,6 +140,9 @@ function buildGroups(){
 function createGroup(n,name){
   const c=document.createElement("div");
   c.className="card";
+  c.dataset.groupN = String(n);
+  c.dataset.groupName = name;
+
   c.innerHTML=`
   <h2>Gruppe ${n}: ${name}</h2>
   <table>
@@ -146,28 +154,32 @@ function createGroup(n,name){
   <th colspan="4">Summe</th>
   <th class="sr">0</th><th class="sz">0</th><th class="st">0</th>
   </tr></tfoot></table>`;
+
   const tb=c.querySelector("tbody");
 
   for(let i=1;i<=5;i++){
     const tr=document.createElement("tr");
     tr.innerHTML=`
     <td>${i}</td>
-    <td><input></td>
-    <td><input type="number" class="input-year" min="1900" max="2099"></td>
-    <td><select></select></td>
-    <td><input type="number" class="input-result" min="0" max="150"></td>
+    <td><input class="in-name"></td>
+    <td><input type="number" class="input-year in-year" min="1900" max="2099"></td>
+    <td><select class="in-geraet"></select></td>
+    <td><input type="number" class="input-result in-res" min="0" max="150"></td>
     <td class="z">0</td>
     <td class="t">0</td>`;
-    const sel=tr.querySelector("select");
+
+    const sel=tr.querySelector(".in-geraet");
     SPORTGERAETE.forEach(g=>{
       const o=document.createElement("option");
       o.value=o.textContent=g.n;
       sel.appendChild(o);
     });
-    tr.querySelectorAll("input,select").forEach(i=>{
-      i.oninput=()=>calcGroup(c);
-      i.onchange=()=>calcGroup(c);
+
+    tr.querySelectorAll("input,select").forEach(el=>{
+      el.addEventListener("input", ()=>calcGroup(c));
+      el.addEventListener("change", ()=>calcGroup(c));
     });
+
     tb.appendChild(tr);
   }
   return c;
@@ -176,55 +188,126 @@ function createGroup(n,name){
 /* ================= BERECHNUNG ================= */
 function calcGroup(card){
   let sr=0,sz=0,st=0;
+
   card.querySelectorAll("tbody tr").forEach(tr=>{
-    const res=+tr.querySelector(".input-result").value||0;
-    if(res>150){alert("Max Resultat 150");tr.querySelector(".input-result").value=150}
-    const g=SPORTGERAETE.find(x=>x.n===tr.querySelector("select").value);
-    const z=g?g.z:0;
-    tr.querySelector(".z").textContent=z;
-    tr.querySelector(".t").textContent=res+z;
-    sr+=res; sz+=z; st+=res+z;
+    const resInput = tr.querySelector(".in-res");
+    let res = +resInput.value || 0;
+
+    if(res > 150){
+      alert("Max Resultat 150");
+      res = 150;
+      resInput.value = 150;
+    }
+    if(res < 0){
+      res = 0;
+      resInput.value = 0;
+    }
+
+    const geraet = tr.querySelector(".in-geraet").value;
+    const z = zuschlagFor(geraet);
+
+    tr.querySelector(".z").textContent = z;
+    tr.querySelector(".t").textContent = res + z;
+
+    sr += res;
+    sz += z;
+    st += (res + z);
   });
+
   card.querySelector(".sr").textContent=sr;
   card.querySelector(".sz").textContent=sz;
   card.querySelector(".st").textContent=st;
+
   calcWinner();
 }
 
 /* ================= SIEGER ================= */
 function calcWinner(){
-  const totals=[...document.querySelectorAll(".st")]
-    .map(e=>+e.textContent||0)
-    .filter(x=>x>0)
-    .sort((a,b)=>b-a);
+  const cards = [...document.querySelectorAll("#groups .card")];
+
+  const entries = cards.map(card=>{
+    const name = card.dataset.groupName || ("Gruppe " + (card.dataset.groupN||"?"));
+    const total = +card.querySelector(".st")?.textContent || 0;
+    return { name, total };
+  }).filter(x => x.total > 0);
+
   const box=document.getElementById("winner");
-  if(!totals.length){
+
+  if(!entries.length){
     box.textContent="Noch keine Resultate";
     box.className="winner winner-none";
     return;
   }
+
+  entries.sort((a,b)=>b.total-a.total);
+
+  // Wenn 3 Gruppen vorhanden (ausgewählt) -> Top 2 Sieger
+  const groupsSelected = [g1.value, g2.value, g3.value].filter(Boolean).length;
+  const topCount = (groupsSelected >= 3) ? 2 : 1;
+
+  const winners = entries.slice(0, topCount);
+
   box.className="winner winner-ok";
-  box.textContent=
-    totals.length>=3
-    ?`🏆 Sieger: ${totals[0]} & ${totals[1]}`
-    :`🏆 Sieger: ${totals[0]}`;
+  if(topCount === 1){
+    box.textContent = `🏆 Sieger: ${winners[0].name} (${winners[0].total})`;
+  }else{
+    box.textContent = `🏆 Sieger: ${winners[0].name} (${winners[0].total}) & ${winners[1].name} (${winners[1].total})`;
+  }
 }
 
 /* ================= MAIL ================= */
 function sendResult(){
+  // Mindest-Check
+  if(!g1.value || !g2.value){
+    alert("Bitte mindestens Gruppe 1 und Gruppe 2 auswählen.");
+    return;
+  }
+
+  // Pflicht: Gruppenchef
+  if(!chef.value.trim() || !email.value.trim()){
+    alert("Bitte Name und E-Mail vom Gruppenchef ausfüllen.");
+    return;
+  }
+
+  // Mail-Text bauen
   let body="AMTSCUP CUP-DUELL\n\n";
-  body+=`Gruppenchef: ${chef.value}\nE-Mail: ${email.value}\n\n`;
-  document.querySelectorAll(".card table").forEach((t,i)=>{
-    body+=`Gruppe ${i+1}\n`;
-    t.querySelectorAll("tbody tr").forEach(tr=>{
-      const v=[...tr.querySelectorAll("input,select")].map(x=>x.value);
-      if(v.join("").trim())
-        body+=`${v[0]};${v[1]};${v[2]};${v[3]};${v[4]}\n`;
+  body += `Gruppenchef: ${chef.value}\n`;
+  body += `E-Mail: ${email.value}\n\n`;
+
+  const cards = [...document.querySelectorAll("#groups .card")];
+
+  cards.forEach((card, idx)=>{
+    const groupName = card.dataset.groupName || `Gruppe ${idx+1}`;
+    const sumRes = card.querySelector(".sr")?.textContent || "0";
+    const sumZ   = card.querySelector(".sz")?.textContent || "0";
+    const sumTot = card.querySelector(".st")?.textContent || "0";
+
+    body += `GRUPPE ${idx+1}: ${groupName}\n`;
+    body += "Name;Jahrgang;Sportgerät;Resultat;Zuschlag;Total\n";
+
+    card.querySelectorAll("tbody tr").forEach(tr=>{
+      const name = tr.querySelector(".in-name").value.trim();
+      const year = tr.querySelector(".in-year").value.trim();
+      const geraet = tr.querySelector(".in-geraet").value.trim();
+      const res = tr.querySelector(".in-res").value.trim();
+      const z = tr.querySelector(".z").textContent.trim();
+      const t = tr.querySelector(".t").textContent.trim();
+
+      // nur Zeilen mit Inhalt
+      if(!name && !year && !geraet && !res) return;
+
+      body += `${name};${year};${geraet};${res};${z};${t}\n`;
     });
-    body+=`Summe Total: ${t.querySelector(".st").textContent}\n\n`;
+
+    body += `SUMME; ; ;${sumRes};${sumZ};${sumTot}\n\n`;
   });
-  location.href=
-   "mailto:"+RESULT_EMAIL+
+
+  // Siegertext auch im Mail
+  body += "SIEGER:\n" + document.getElementById("winner").textContent + "\n";
+
+  // Mail öffnen
+  location.href =
+   "mailto:"+encodeURIComponent(RESULT_EMAIL)+
    "?subject="+encodeURIComponent("Amtscup Resultat")+
    "&body="+encodeURIComponent(body);
 }
