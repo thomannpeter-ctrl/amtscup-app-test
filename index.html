@@ -7,87 +7,48 @@
 
 <style>
 *{box-sizing:border-box}
-
 body{
-  font-family: system-ui, Arial, sans-serif;
+  font-family:system-ui,Arial,sans-serif;
   background:#eef2f7;
   margin:0;
   padding:1rem;
-  color:#111827;
 }
-
-/* >>> WICHTIG: verhindert Seitenbreite <<< */
 .container{
   max-width:1100px;
   margin:0 auto;
 }
-
-h1{color:#1e3a8a;margin-bottom:1rem}
-
 .card{
   background:#fff;
   border-radius:14px;
   padding:1rem 1.25rem;
-  box-shadow:0 4px 10px rgba(15,23,42,.08);
   margin-bottom:1rem;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);
 }
-
-table{
+h1{color:#1e3a8a}
+h3{margin-top:0}
+select,input{
   width:100%;
-  border-collapse:collapse;
-  font-size:.85rem;
-}
-
-th,td{
-  border:1px solid #e5e7eb;
-  padding:.35rem;
-  text-align:center;
-}
-
-th{background:#dbeafe}
-
-input,select{
-  width:100%;
-  padding:.45rem;
+  padding:.5rem;
   border-radius:8px;
   border:1px solid #cbd5f5;
+  margin-bottom:.5rem;
 }
-
-.name{max-width:160px}
-.year{max-width:80px}
-.result{max-width:70px}
-
-.sum{
-  background:#f3f4f6;
-  font-weight:700;
-}
-
 button{
+  width:100%;
+  padding:1rem;
   border:none;
   border-radius:999px;
-  padding:.9rem 1.2rem;
-  font-size:1rem;
-  cursor:pointer;
   background:#2563eb;
   color:white;
-  width:100%;
+  font-size:1rem;
+  cursor:pointer;
 }
-
 .winner{
-  padding:.6rem .9rem;
-  border-radius:999px;
   background:#dcfce7;
+  padding:.6rem 1rem;
+  border-radius:999px;
   font-weight:700;
   display:inline-block;
-}
-
-/* Mobile */
-@media(max-width:768px){
-  table{
-    display:block;
-    overflow-x:auto;
-    white-space:nowrap;
-  }
 }
 </style>
 </head>
@@ -107,12 +68,8 @@ button{
   <h3>2. Gruppenauswahl</h3>
   <select id="g1"></select>
   <select id="g2"></select>
-  <select id="g3">
-    <option value="">keine 3. Gruppe</option>
-  </select>
+  <select id="g3"></select>
 </div>
-
-<div id="groups"></div>
 
 <div class="card">
   <h3>Sieger</h3>
@@ -120,175 +77,59 @@ button{
 </div>
 
 <div class="card">
-  <button onclick="sendAll()">📧 Resultat senden</button>
+  <button onclick="alert('Versand kommt im nächsten Schritt 👍')">
+    📧 Resultat senden
+  </button>
 </div>
 
 </div>
 
 <script>
-/* ================= KONFIG ================= */
-const SCRIPT_URL =
-"https://script.google.com/macros/s/AKfycbzMc02eHBrvhcq3oma4tNOE3SwS5W-ax0HP73_QfVnF5I9y-ngdVKTpFNTaYm6xvbkE-A/exec";
+/* ========= ABSOLUT STABILE GRUPPENLISTE ========= */
+const FALLBACK_GROUPS = [
+ "1 Heim 1 A071 Worber Sportschützen Querschleger",
+ "1 Gast 1 A001 Aareschützen Kiesen Oppligen Aare",
+ "1 Gast 1 A037 Linden FS Innerbirrmoos",
+ "2 Heim 1 A065 Trimstein Eichi FS Sius",
+ "2 Gast 1 A028 Konolfingen SG Eiger",
+ "3 Heim 1 A048 Oberthal MS Kapfwald",
+ "3 Gast 1 A011 Bowil MS A-Team",
+ "4 Heim 1 A056 Sportschützen Furth Kobra"
+];
 
-const RESULT_EMAIL = "thomannpeter@bluewin.ch";
-
-const GRUPPEN_URL =
+/* ========= VERSUCH: GitHub laden ========= */
+const GITHUB_URL =
 "https://raw.githubusercontent.com/thomannpeter-ctrl/amtscup-app-test/main/gruppen.txt";
 
-const SPORTGERAETE = {
-  "":0,
-  "Standard":0,
-  "FG":0,
-  "Karabiner":4,
-  "57/02":8,
-  "57/03":4,
-  "90BK":4,
-  "90RK":4
-};
-/* ========================================== */
-
-const groupsDiv=document.getElementById("groups");
-
-/* Gruppen laden */
-fetch(GRUPPEN_URL+"?"+Date.now())
-.then(r=>r.text())
-.then(txt=>{
-  const list=txt.split(/\r?\n/).filter(l=>l.trim());
-  [g1,g2,g3].forEach(sel=>{
-    sel.innerHTML="<option value=''>Bitte wählen …</option>";
-    list.forEach(g=>{
+function fillSelects(groups){
+  [g1,g2,g3].forEach((sel,i)=>{
+    sel.innerHTML = "<option value=''>Bitte wählen…</option>";
+    if(i===2){
+      const o=document.createElement("option");
+      o.value="";
+      o.textContent="keine 3. Gruppe";
+      sel.appendChild(o);
+    }
+    groups.forEach(g=>{
       const o=document.createElement("option");
       o.value=o.textContent=g;
       sel.appendChild(o);
     });
   });
-});
+}
 
-/* Rebuild Tabellen */
-[g1,g2,g3].forEach(sel=>sel.onchange=build);
-
-function build(){
-  groupsDiv.innerHTML="";
-  [g1,g2,g3].forEach((sel,i)=>{
-    if(!sel.value) return;
-    groupsDiv.appendChild(makeGroup(i+1,sel.value));
+/* ========= Laden mit Fallback ========= */
+fetch(GITHUB_URL)
+  .then(r=>r.ok ? r.text() : Promise.reject())
+  .then(txt=>{
+    const groups = txt.split(/\r?\n/).filter(l=>l.trim());
+    fillSelects(groups);
+    console.log("Gruppen aus GitHub geladen");
+  })
+  .catch(()=>{
+    fillSelects(FALLBACK_GROUPS);
+    console.warn("GitHub nicht erreichbar → Fallback aktiv");
   });
-}
-
-function makeGroup(n,name){
-  const c=document.createElement("div");
-  c.className="card";
-  c.innerHTML=`
-  <h3>Gruppe ${n}: ${name}</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th><th>Name</th><th>Jahrgang</th>
-        <th>Sportgerät</th><th>Resultat</th>
-        <th>Zuschlag</th><th>Total</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${[1,2,3,4,5].map(i=>row(n,i)).join("")}
-    </tbody>
-    <tfoot>
-      <tr class="sum">
-        <td colspan="4">Summe</td>
-        <td id="sr${n}">0</td>
-        <td id="sz${n}">0</td>
-        <td id="st${n}">0</td>
-      </tr>
-    </tfoot>
-  </table>`;
-  return c;
-}
-
-function row(g,i){
-  return `
-  <tr data-g="${g}">
-    <td>${i}</td>
-    <td><input class="name"></td>
-    <td><input type="number" class="year" min="1900" max="2100"></td>
-    <td>
-      <select onchange="calc(this)">
-        ${Object.keys(SPORTGERAETE).map(k=>`<option>${k}</option>`).join("")}
-      </select>
-    </td>
-    <td><input type="number" class="result" min="0" max="150" oninput="calc(this)"></td>
-    <td class="z">0</td>
-    <td class="t">0</td>
-  </tr>`;
-}
-
-function calc(el){
-  const tr=el.closest("tr");
-  const res=+tr.children[4].firstChild.value||0;
-  const g=tr.children[3].firstChild.value;
-  const z=SPORTGERAETE[g]||0;
-  tr.children[5].textContent=z;
-  tr.children[6].textContent=res+z;
-  sumAll();
-}
-
-function sumAll(){
-  let winners=[];
-  [g1,g2,g3].forEach((s,i)=>{
-    if(!s.value) return;
-    let sr=0,sz=0,st=0;
-    document.querySelectorAll(`tr[data-g="${i+1}"]`).forEach(tr=>{
-      sr+=+tr.children[4].firstChild.value||0;
-      sz+=+tr.children[5].textContent||0;
-      st+=+tr.children[6].textContent||0;
-    });
-    sr${i+1}.textContent=sr;
-    sz${i+1}.textContent=sz;
-    st${i+1}.textContent=st;
-    winners.push({name:s.value,total:st});
-  });
-
-  winners.sort((a,b)=>b.total-a.total);
-  winner.textContent=winners.length
-    ? "🏆 Sieger: "+winners[0].name+" ("+winners[0].total+")"
-    : "Noch keine Resultate";
-}
-
-/* Senden */
-function sendAll(){
-  const entries=[];
-  document.querySelectorAll("tr[data-g]").forEach(tr=>{
-    const name=tr.children[1].firstChild.value;
-    if(!name) return;
-    const g=tr.dataset.g;
-    entries.push({
-      gruppenchef:chef.value,
-      email:email.value,
-      gruppe:[g1,g2,g3][g-1].value,
-      name,
-      jahrgang:tr.children[2].firstChild.value,
-      sportgeraet:tr.children[3].firstChild.value,
-      resultat:tr.children[4].firstChild.value,
-      zuschlag:tr.children[5].textContent,
-      total:tr.children[6].textContent,
-      summe_total:document.getElementById("st"+g).textContent
-    });
-  });
-
-  fetch(SCRIPT_URL,{
-    method:"POST",
-    headers:{"Content-Type":"application/x-www-form-urlencoded"},
-    body:"payload="+encodeURIComponent(JSON.stringify({entries}))
-  });
-
-  let body="AMTSCUP – RESULTATE\n\n";
-  entries.forEach(e=>{
-    body+=`${e.gruppe}\n${e.name} ${e.jahrgang} ${e.sportgeraet} Resultat:${e.resultat} Zuschlag:${e.zuschlag} Total:${e.total}\n\n`;
-  });
-
-  location.href=
-    "mailto:"+RESULT_EMAIL+
-    "?subject="+encodeURIComponent("Amtscup Resultate")+
-    "&body="+encodeURIComponent(body);
-}
 </script>
 
 </body>
