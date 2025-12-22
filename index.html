@@ -1,0 +1,981 @@
+
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Amtscup – Cup-Duell (bis zu drei Gruppen)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #eef2f7;
+      color: #111827;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    h1 {
+      margin: 0 0 1rem 0;
+      color: #1e3a8a;
+      font-size: 1.6rem;
+    }
+    h2 {
+      margin: 0 0 0.5rem 0;
+      color: #1d4ed8;
+      font-size: 1.2rem;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 4px 10px rgba(15,23,42,0.08);
+      margin-bottom: 1rem;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .field {
+      flex: 1 1 220px;
+      min-width: 180px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #4b5563;
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    select,
+    textarea {
+      padding: 0.45rem 0.55rem;
+      border-radius: 8px;
+      border: 1px solid #cbd5f5;
+      font-size: 0.9rem;
+      width: 100%;
+      background: #f9fafb;
+    }
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 1px rgba(37,99,235,0.25);
+      background: #ffffff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      background: #ffffff;
+    }
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 0.35rem;
+      text-align: center;
+    }
+    th {
+      background: #dbeafe;
+    }
+    td input, td select {
+      border: none;
+      background: transparent;
+      width: 100%;
+      padding: 0.2rem;
+      font-size: 0.85rem;
+    }
+    td input:focus, td select:focus {
+      outline: none;
+      background: #eff6ff;
+      border-radius: 4px;
+    }
+    td .name-input {
+      text-align: left;
+    }
+    .zuschlag-cell,
+    .total-cell,
+    .sum-cell {
+      background: #f3f4f6;
+      font-weight: 600;
+    }
+    tfoot th {
+      background: #eff6ff;
+      text-align: right;
+    }
+    .group-title {
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      color: #111827;
+    }
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 0.45rem 0.95rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: #ffffff;
+    }
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+    .btn-danger {
+      background: #dc2626;
+      color: #ffffff;
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .small-note {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 0.25rem;
+    }
+    .preview-img {
+      max-width: 200px;
+      max-height: 150px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      object-fit: cover;
+      display: none;
+      margin-top: 0.5rem;
+    }
+    .submissions-table {
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 0.5rem;
+    }
+    .winner-box {
+      margin-top: 0.5rem;
+      padding: 0.6rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .winner-none {
+      background: #e5e7eb;
+      color: #374151;
+    }
+    .winner-g1 {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .winner-g2 {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    .winner-g3 {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+    .winner-draw {
+      background: #fef9c3;
+      color: #854d0e;
+    }
+    .error {
+      border-color: #dc2626 !important;
+      background: #fee2e2 !important;
+    }
+    @media (max-width: 640px) {
+      th, td { font-size: 0.75rem; }
+      button { width: 100%; justify-content: center; }
+      .row { flex-direction: column; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Amtscup – Cup-Duell (bis zu drei Gruppen)</h1>
+
+    <div class="card">
+      <h2>1. Gruppenchef &amp; Gruppen</h2>
+      <div class="row">
+        <div class="field">
+          <label for="chefName">Name Gruppenchef</label>
+          <input id="chefName" type="text" placeholder="Name Vorname">
+        </div>
+        <div class="field">
+          <label for="chefEmail">E-Mail Gruppenchef</label>
+          <input id="chefEmail" type="email" placeholder="name@verein.ch">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="gruppe1Select">Gruppe 1 (Liste)</label>
+          <select id="gruppe1Select"></select>
+        </div>
+        <div class="field">
+          <label for="gruppe1Other">Andere Gruppe 1</label>
+          <input id="gruppe1Other" type="text" placeholder="falls nicht in der Liste">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="gruppe2Select">Gruppe 2 (Liste)</label>
+          <select id="gruppe2Select"></select>
+        </div>
+        <div class="field">
+          <label for="gruppe2Other">Andere Gruppe 2</label>
+          <input id="gruppe2Other" type="text" placeholder="falls nicht in der Liste">
+        </div>
+      </div>
+
+      <div class="row" id="gruppe3Row" style="display:none;">
+        <div class="field">
+          <label for="gruppe3Select">Gruppe 3 (Liste, optional)</label>
+          <select id="gruppe3Select"></select>
+        </div>
+        <div class="field">
+          <label for="gruppe3Other">Andere Gruppe 3</label>
+          <input id="gruppe3Other" type="text" placeholder="falls nicht in der Liste">
+        </div>
+      </div>
+
+      <button id="addGroup3Btn" class="btn-secondary" type="button">➕ 3. Gruppe hinzufügen (optional)</button>
+
+      <div class="small-note">
+        Pflichtfelder bei Schützen: Name, Jahrgang, Sportgerät, Resultat (nur Gruppe 1 ist zwingend, Gruppen 2/3 optional).
+        Gruppenliste kommt aus <code>gruppen.txt</code> (GitHub).
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. Schützen &amp; Resultate – Gruppe 1</h2>
+      <div class="small-note">Sportgerät wählen – Zuschlag wird automatisch übernommen. Total = Resultat + Zuschlag.</div>
+      <div style="overflow-x:auto; margin-top:0.5rem;">
+        <div class="group-title" id="gruppe1TitleLabel">Gruppe 1</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Schütze</th>
+              <th>Name Vorname*</th>
+              <th>Jahrgang*</th>
+              <th>Sportgerät*</th>
+              <th>Resultat*</th>
+              <th>Zuschlag</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody id="shootersBody1"></tbody>
+          <tfoot>
+            <tr>
+              <th colspan="4">Summen Gruppe 1</th>
+              <th id="sumResult1" class="sum-cell"></th>
+              <th id="sumZuschlag1" class="sum-cell"></th>
+              <th id="sumTotal1" class="sum-cell"></th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>3. Schützen &amp; Resultate – Gruppe 2</h2>
+      <div class="small-note">Sportgerät wählen – Zuschlag wird automatisch übernommen. Total = Resultat + Zuschlag.</div>
+      <div style="overflow-x:auto; margin-top:0.5rem;">
+        <div class="group-title" id="gruppe2TitleLabel">Gruppe 2</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Schütze</th>
+              <th>Name Vorname*</th>
+              <th>Jahrgang*</th>
+              <th>Sportgerät*</th>
+              <th>Resultat*</th>
+              <th>Zuschlag</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody id="shootersBody2"></tbody>
+          <tfoot>
+            <tr>
+              <th colspan="4">Summen Gruppe 2</th>
+              <th id="sumResult2" class="sum-cell"></th>
+              <th id="sumZuschlag2" class="sum-cell"></th>
+              <th id="sumTotal2" class="sum-cell"></th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="gruppe3Card" style="display:none;">
+      <h2>4. Schützen &amp; Resultate – Gruppe 3 (optional)</h2>
+      <div class="small-note">
+        Sportgerät wählen – Zuschlag wird automatisch übernommen. Total = Resultat + Zuschlag.
+        Gruppe 3 ist optional und wird nur berücksichtigt, wenn Schützen erfasst sind.
+      </div>
+      <div style="overflow-x:auto; margin-top:0.5rem;">
+        <div class="group-title" id="gruppe3TitleLabel">Gruppe 3</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Schütze</th>
+              <th>Name Vorname*</th>
+              <th>Jahrgang*</th>
+              <th>Sportgerät*</th>
+              <th>Resultat*</th>
+              <th>Zuschlag</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody id="shootersBody3"></tbody>
+          <tfoot>
+            <tr>
+              <th colspan="4">Summen Gruppe 3</th>
+              <th id="sumResult3" class="sum-cell"></th>
+              <th id="sumZuschlag3" class="sum-cell"></th>
+              <th id="sumTotal3" class="sum-cell"></th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>5. Vergleich &amp; Sieger</h2>
+      <div class="small-note">Die Totalsummen der Gruppen werden verglichen, der Sieger wird hervorgehoben.</div>
+      <div id="winnerBox" class="winner-box winner-none">Noch keine Resultate erfasst.</div>
+    </div>
+
+    <div class="card">
+      <h2>6. Bild hochladen (optional)</h2>
+      <div class="field">
+        <label for="imageUpload">Hier Bild hochladen (z.B. Gruppenfoto, Standblatt)</label>
+        <input id="imageUpload" type="file" accept="image/*">
+        <img id="imagePreview" class="preview-img" alt="Vorschau Bild">
+      </div>
+      <div class="small-note">
+        Das Bild kann im Mailprogramm manuell als Anhang hinzugefügt werden. Der Dateiname wird in der Meldung mitgegeben.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>7. Senden &amp; Export</h2>
+      <p>
+        Nach dem Erfassen könnt ihr entweder nur für euch eine Excel-Datei erzeugen
+        oder die Meldung direkt per E-Mail an <strong>thomannpeter@bluewin.ch</strong> senden.
+      </p>
+      <div class="btn-group">
+        <button id="exportBtn" class="btn-secondary" type="button">📄 Nur Excel exportieren</button>
+        <button id="sendBtn" class="btn-primary" type="button">📧 Formular absenden &amp; lokal speichern</button>
+      </div>
+      <div class="small-note">
+        Beim Absenden wird eine E-Mail im Mailprogramm geöffnet und die Meldung zusätzlich in der lokalen Übersicht gespeichert.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>8. Cup-Meldungen (lokal auf diesem Gerät)</h2>
+      <div class="small-note">
+        Diese Übersicht gilt nur für dieses Gerät / diesen Browser (localStorage). Eine zentrale Online-Sammelstelle kann später mit einer Datenbank ergänzt werden.
+      </div>
+      <div class="submissions-table">
+        <table id="submissionsTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Zeit</th>
+              <th>Gruppe 1</th>
+              <th>Gruppe 2</th>
+              <th>Gruppe 3</th>
+              <th>Sieger</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="small-note" style="text-align:center; margin:1rem 0 0.5rem;">
+      Hinweis: Die Empfänger-E-Mail für die Resultatmeldungen ist im Code bei <code>RESULT_EMAIL</code> hinterlegt.
+      Gruppenliste wird aus <code>gruppen.txt</code> geladen.
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <script>
+    const RESULT_EMAIL = "thomannpeter@bluewin.ch";
+
+    const SPORTGERAETE = [
+      { name: "", zuschlag: 0 },
+      { name: "Standard", zuschlag: 0 },
+      { name: "Freigewehr", zuschlag: 0 },
+      { name: "Karabiner", zuschlag: 4 },
+      { name: "57/02", zuschlag: 8 },
+      { name: "57/03", zuschlag: 4 },
+      { name: "90BK", zuschlag: 4 },
+      { name: "90RK", zuschlag: 4 }
+    ];
+
+    let submissions = [];
+    let group3Enabled = false;
+    let groupsList = [];
+
+    function parseGroups(text) {
+      return text
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(l => l.length > 0 && !l.startsWith("#"));
+    }
+
+    // === GRUPPEN NUR AUS GITHUB gruppen.txt ===
+    async function loadGroups() {
+      try {
+        const response = await fetch("gruppen.txt?ts=" + Date.now(), { cache: "no-store" });
+        if (!response.ok) throw new Error("gruppen.txt konnte nicht geladen werden");
+        const text = await response.text();
+        groupsList = parseGroups(text);
+      } catch (err) {
+        alert("Fehler beim Laden der Gruppenliste aus gruppen.txt.\nBitte prüfen: Datei vorhanden? gleicher Ordner wie index.html?");
+        console.error(err);
+        groupsList = [];
+      }
+
+      const selects = [
+        document.getElementById("gruppe1Select"),
+        document.getElementById("gruppe2Select"),
+        document.getElementById("gruppe3Select")
+      ];
+
+      selects.forEach(select => {
+        if (!select) return;
+        select.innerHTML = "";
+        const placeholderOpt = document.createElement("option");
+        placeholderOpt.value = "";
+        placeholderOpt.textContent = "Bitte wählen …";
+        select.appendChild(placeholderOpt);
+
+        groupsList.forEach(g => {
+          const opt = document.createElement("option");
+          opt.value = g;
+          opt.textContent = g;
+          select.appendChild(opt);
+        });
+      });
+
+      updateGroupTitles();
+    }
+
+    function getEffectiveGroupName(which) {
+      if (which === 1) {
+        const other = document.getElementById("gruppe1Other").value.trim();
+        if (other) return other;
+        const sel = document.getElementById("gruppe1Select").value.trim();
+        return sel || "";
+      } else if (which === 2) {
+        const other = document.getElementById("gruppe2Other").value.trim();
+        if (other) return other;
+        const sel = document.getElementById("gruppe2Select").value.trim();
+        return sel || "";
+      } else if (which === 3) {
+        const row = document.getElementById("gruppe3Row");
+        if (row && row.style.display === "none") return "";
+        const other = document.getElementById("gruppe3Other").value.trim();
+        if (other) return other;
+        const sel = document.getElementById("gruppe3Select").value.trim();
+        return sel || "";
+      }
+      return "";
+    }
+
+    function updateGroupTitles() {
+      const g1 = getEffectiveGroupName(1) || "Gruppe 1";
+      const g2 = getEffectiveGroupName(2) || "Gruppe 2";
+      const g3 = getEffectiveGroupName(3) || "Gruppe 3";
+      document.getElementById("gruppe1TitleLabel").textContent = g1;
+      document.getElementById("gruppe2TitleLabel").textContent = g2;
+      const t3 = document.getElementById("gruppe3TitleLabel");
+      if (t3) t3.textContent = g3;
+    }
+
+    function createGroupRows(group) {
+      const tbody = document.getElementById(group === 1 ? "shootersBody1" : group === 2 ? "shootersBody2" : "shootersBody3");
+      tbody.innerHTML = "";
+      for (let i = 1; i <= 5; i++) {
+        const tr = document.createElement("tr");
+        tr.dataset.group = group;
+        tr.dataset.index = i;
+        tr.innerHTML = `
+          <td>Schütze ${i}</td>
+          <td><input type="text" class="name-input" placeholder="Name Vorname"></td>
+          <td><input type="number" class="year-input" min="1900" max="2100" placeholder="Jahrgang"></td>
+          <td><select class="geraet-select"></select></td>
+          <td><input type="number" class="result-input" min="0" placeholder="0"></td>
+          <td class="zuschlag-cell"></td>
+          <td class="total-cell"></td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      tbody.querySelectorAll(".geraet-select").forEach(select => {
+        SPORTGERAETE.forEach(g => {
+          const opt = document.createElement("option");
+          opt.value = g.name;
+          opt.textContent = g.name;
+          select.appendChild(opt);
+        });
+        select.addEventListener("change", onGeraetChange);
+      });
+
+      tbody.querySelectorAll(".result-input").forEach(input => {
+        input.addEventListener("input", onResultChange);
+      });
+
+      updateTotals();
+    }
+
+    function getZuschlagForGeraet(name) {
+      const g = SPORTGERAETE.find(x => x.name === name);
+      return g ? g.zuschlag : 0;
+    }
+
+    function recalcRow(tr) {
+      const select = tr.querySelector(".geraet-select");
+      const resultInput = tr.querySelector(".result-input");
+      const zuschlagCell = tr.querySelector(".zuschlag-cell");
+      const totalCell = tr.querySelector(".total-cell");
+
+      const geraetName = select.value;
+      const resultVal = parseInt(resultInput.value, 10);
+      const res = isNaN(resultVal) ? 0 : resultVal;
+      const zuschlag = getZuschlagForGeraet(geraetName);
+
+      zuschlagCell.textContent = zuschlag ? zuschlag : "";
+      const total = res + zuschlag;
+      totalCell.textContent = (res || zuschlag) ? total : "";
+    }
+
+    function onGeraetChange(e) {
+      const tr = e.target.closest("tr");
+      recalcRow(tr);
+      updateTotals();
+    }
+
+    function onResultChange(e) {
+      const tr = e.target.closest("tr");
+      recalcRow(tr);
+      updateTotals();
+    }
+
+    function getShooterData(group) {
+      const tbody = document.getElementById(group === 1 ? "shootersBody1" : group === 2 ? "shootersBody2" : "shootersBody3");
+      const rows = [];
+      tbody.querySelectorAll("tr").forEach(tr => {
+        const idx = tr.dataset.index;
+        const name = tr.querySelector(".name-input").value.trim();
+        const year = tr.querySelector(".year-input").value.trim();
+        const geraet = tr.querySelector(".geraet-select").value;
+        const result = tr.querySelector(".result-input").value.trim();
+        const zuschlag = tr.querySelector(".zuschlag-cell").textContent.trim();
+        const total = tr.querySelector(".total-cell").textContent.trim();
+        if (!name && !year && !geraet && !result && !zuschlag && !total) return;
+
+        rows.push({
+          index: idx,
+          name,
+          year,
+          geraet,
+          result: result || "0",
+          zuschlag: zuschlag || "0",
+          total: total || "0"
+        });
+      });
+      return rows;
+    }
+
+    function getTotalsForGroup(group) {
+      const shooters = getShooterData(group);
+      let sumR = 0, sumZ = 0, sumT = 0;
+      shooters.forEach(s => {
+        sumR += parseInt(s.result, 10) || 0;
+        sumZ += parseInt(s.zuschlag, 10) || 0;
+        sumT += parseInt(s.total, 10) || 0;
+      });
+      return { sumResult: sumR, sumZuschlag: sumZ, sumTotal: sumT };
+    }
+
+    function updateTotals() {
+      const t1 = getTotalsForGroup(1);
+      const t2 = getTotalsForGroup(2);
+      const t3 = group3Enabled ? getTotalsForGroup(3) : { sumResult: 0, sumZuschlag: 0, sumTotal: 0 };
+
+      document.getElementById("sumResult1").textContent = t1.sumResult || "";
+      document.getElementById("sumZuschlag1").textContent = t1.sumZuschlag || "";
+      document.getElementById("sumTotal1").textContent = t1.sumTotal || "";
+
+      document.getElementById("sumResult2").textContent = t2.sumResult || "";
+      document.getElementById("sumZuschlag2").textContent = t2.sumZuschlag || "";
+      document.getElementById("sumTotal2").textContent = t2.sumTotal || "";
+
+      const sr3 = document.getElementById("sumResult3");
+      if (sr3) {
+        sr3.textContent = t3.sumResult || "";
+        document.getElementById("sumZuschlag3").textContent = t3.sumZuschlag || "";
+        document.getElementById("sumTotal3").textContent = t3.sumTotal || "";
+      }
+
+      updateWinnerBox(t1.sumTotal, t2.sumTotal, t3.sumTotal);
+    }
+
+    function updateWinnerBox(total1, total2, total3) {
+      const box = document.getElementById("winnerBox");
+      box.className = "winner-box";
+
+      const g1 = getEffectiveGroupName(1) || "Gruppe 1";
+      const g2 = getEffectiveGroupName(2) || "Gruppe 2";
+      const g3Name = group3Enabled ? (getEffectiveGroupName(3) || "Gruppe 3") : "";
+
+      const totals = [];
+      if (total1) totals.push({ name: g1, total: total1, cls: "winner-g1" });
+      if (total2) totals.push({ name: g2, total: total2, cls: "winner-g2" });
+      if (group3Enabled && total3) totals.push({ name: g3Name, total: total3, cls: "winner-g3" });
+
+      if (!totals.length) {
+        box.classList.add("winner-none");
+        box.textContent = "Noch keine Resultate erfasst.";
+        return;
+      }
+
+      totals.sort((a, b) => b.total - a.total);
+      const best = totals[0];
+      const tied = totals.filter(t => t.total === best.total);
+
+      if (tied.length > 1) {
+        box.classList.add("winner-draw");
+        const names = tied.map(t => t.name).join(" / ");
+        box.textContent = "🤝 Unentschieden – " + names + " (Total " + best.total + ")";
+      } else {
+        box.classList.add(best.cls);
+        box.textContent = "🏆 Sieger: " + best.name + " (Total " + best.total + ")";
+      }
+    }
+
+    function clearErrors() {
+      document.querySelectorAll(".error").forEach(el => el.classList.remove("error"));
+    }
+
+    function validateShooterRows() {
+      clearErrors();
+      let isValid = true;
+      let group1Has = false;
+
+      [1, 2, 3].forEach(group => {
+        if (group === 3 && !group3Enabled) return;
+
+        const tbody = document.getElementById(group === 1 ? "shootersBody1" : group === 2 ? "shootersBody2" : "shootersBody3");
+        tbody.querySelectorAll("tr").forEach(tr => {
+          const nameInput = tr.querySelector(".name-input");
+          const yearInput = tr.querySelector(".year-input");
+          const geraetSelect = tr.querySelector(".geraet-select");
+          const resultInput = tr.querySelector(".result-input");
+
+          const name = nameInput.value.trim();
+          const year = yearInput.value.trim();
+          const geraet = geraetSelect.value.trim();
+          const result = resultInput.value.trim();
+
+          const anyFilled = name || year || geraet || result;
+          if (!anyFilled) return;
+
+          if (group === 1) group1Has = true;
+
+          if (!name) { nameInput.classList.add("error"); isValid = false; }
+          if (!year) { yearInput.classList.add("error"); isValid = false; }
+          if (!geraet) { geraetSelect.classList.add("error"); isValid = false; }
+          if (!result) { resultInput.classList.add("error"); isValid = false; }
+        });
+      });
+
+      if (!group1Has) {
+        alert("Bitte in Gruppe 1 mindestens einen Schützen mit Daten erfassen.");
+        return false;
+      }
+      if (!isValid) {
+        alert("Bitte alle Pflichtfelder (Name, Jahrgang, Sportgerät, Resultat) für erfasste Schützen ausfüllen.");
+        return false;
+      }
+      return true;
+    }
+
+    function exportToExcel() {
+      if (!validateShooterRows()) return;
+
+      const chefName = document.getElementById("chefName").value || "";
+      const chefEmail = document.getElementById("chefEmail").value || "";
+      const group1Name = getEffectiveGroupName(1);
+      const group2Name = getEffectiveGroupName(2);
+      const group3Name = getEffectiveGroupName(3);
+
+      const shooters1 = getShooterData(1);
+      const shooters2 = getShooterData(2);
+      const shooters3 = group3Enabled ? getShooterData(3) : [];
+      const t1 = getTotalsForGroup(1);
+      const t2 = getTotalsForGroup(2);
+      const t3 = (group3Enabled && shooters3.length) ? getTotalsForGroup(3) : { sumResult: 0, sumZuschlag: 0, sumTotal: 0 };
+
+      const data = [];
+      data.push(["Amtscup Cup-Duell – Resultatmeldung"]);
+      data.push([]);
+      data.push(["Gruppenchef:", chefName, "E-Mail:", chefEmail]);
+      data.push(["Gruppe 1:", group1Name]);
+      data.push(["Gruppe 2:", group2Name]);
+      if (group3Name) data.push(["Gruppe 3:", group3Name]);
+      data.push([]);
+
+      data.push(["Gruppe 1 – Schützen"]);
+      data.push(["Schütze", "Name", "Jahrgang", "Sportgerät", "Resultat", "Zuschlag", "Total"]);
+      shooters1.forEach(s => data.push(["Schütze " + s.index, s.name, s.year, s.geraet, s.result, s.zuschlag, s.total]));
+      data.push(["Summen Gruppe 1", "", "", "", t1.sumResult, t1.sumZuschlag, t1.sumTotal]);
+      data.push([]);
+
+      if (shooters2.length) {
+        data.push(["Gruppe 2 – Schützen"]);
+        data.push(["Schütze", "Name", "Jahrgang", "Sportgerät", "Resultat", "Zuschlag", "Total"]);
+        shooters2.forEach(s => data.push(["Schütze " + s.index, s.name, s.year, s.geraet, s.result, s.zuschlag, s.total]));
+        data.push(["Summen Gruppe 2", "", "", "", t2.sumResult, t2.sumZuschlag, t2.sumTotal]);
+        data.push([]);
+      }
+
+      if (group3Enabled && shooters3.length) {
+        data.push(["Gruppe 3 – Schützen"]);
+        data.push(["Schütze", "Name", "Jahrgang", "Sportgerät", "Resultat", "Zuschlag", "Total"]);
+        shooters3.forEach(s => data.push(["Schütze " + s.index, s.name, s.year, s.geraet, s.result, s.zuschlag, s.total]));
+        data.push(["Summen Gruppe 3", "", "", "", t3.sumResult, t3.sumZuschlag, t3.sumTotal]);
+        data.push([]);
+      }
+
+      const winnerText = getWinnerText(t1.sumTotal, t2.sumTotal, t3.sumTotal, group1Name, group2Name, group3Name);
+      data.push(["Sieger:", winnerText]);
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Cup-Duell");
+
+      const safeName = (group1Name + "_vs_" + group2Name).replace(/\s+/g, "_");
+      XLSX.writeFile(wb, "Amtscup_CupDuell_" + safeName + ".xlsx");
+    }
+
+    function getWinnerText(total1, total2, total3, g1, g2, g3) {
+      const entries = [];
+      const name1 = g1 || "Gruppe 1";
+      const name2 = g2 || "Gruppe 2";
+      if (total1) entries.push({ name: name1, total: total1 });
+      if (total2) entries.push({ name: name2, total: total2 });
+      if (group3Enabled && total3) entries.push({ name: g3 || "Gruppe 3", total: total3 });
+
+      if (!entries.length) return "Noch keine Resultate";
+
+      entries.sort((a, b) => b.total - a.total);
+      const best = entries[0];
+      const tied = entries.filter(e => e.total === best.total);
+      if (tied.length > 1) return "Unentschieden: " + tied.map(e => e.name).join(" / ") + " (Total " + best.total + ")";
+      return best.name + " (Total " + best.total + ")";
+    }
+
+    function saveSubmissionLocally(meta) {
+      const stamp = new Date();
+      const sub = {
+        time: stamp.toLocaleString(),
+        gruppe1: meta.group1Name,
+        gruppe2: meta.group2Name,
+        gruppe3: meta.group3Name,
+        winner: meta.winnerText
+      };
+      submissions.push(sub);
+      localStorage.setItem("amtscupCupMeldungen", JSON.stringify(submissions));
+      renderSubmissions();
+    }
+
+    function renderSubmissions() {
+      const tbody = document.querySelector("#submissionsTable tbody");
+      tbody.innerHTML = "";
+      submissions.forEach((s, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td>${s.time}</td>
+          <td>${s.gruppe1}</td>
+          <td>${s.gruppe2}</td>
+          <td>${s.gruppe3 || ""}</td>
+          <td>${s.winner}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function loadSubmissions() {
+      const stored = localStorage.getItem("amtscupCupMeldungen");
+      if (stored) {
+        try { submissions = JSON.parse(stored) || []; }
+        catch { submissions = []; }
+      }
+      renderSubmissions();
+    }
+
+    function buildEmailAndSend() {
+      if (!validateShooterRows()) return;
+
+      const chefName = document.getElementById("chefName").value.trim();
+      const chefEmail = document.getElementById("chefEmail").value.trim();
+      const group1Name = getEffectiveGroupName(1);
+      const group2Name = getEffectiveGroupName(2);
+      const group3Name = getEffectiveGroupName(3);
+
+      if (!chefName || !chefEmail || !group1Name) {
+        alert("Bitte Gruppenchef (Name & E-Mail) und mindestens Gruppe 1 auswählen/angeben.");
+        return;
+      }
+
+      const shooters1 = getShooterData(1);
+      const shooters2 = getShooterData(2);
+      const shooters3 = group3Enabled ? getShooterData(3) : [];
+      const t1 = getTotalsForGroup(1);
+      const t2 = getTotalsForGroup(2);
+      const t3 = (group3Enabled && shooters3.length) ? getTotalsForGroup(3) : { sumResult: 0, sumZuschlag: 0, sumTotal: 0 };
+
+      const imageInput = document.getElementById("imageUpload");
+      const imageFile = imageInput.files[0];
+      const imageInfo = imageFile ? imageFile.name : "kein Bild ausgewählt";
+
+      const winnerText = getWinnerText(t1.sumTotal, t2.sumTotal, t3.sumTotal, group1Name, group2Name, group3Name);
+      saveSubmissionLocally({ group1Name, group2Name, group3Name, winnerText });
+
+      let body = "";
+      body += "Amtscup Cup-Duell – Resultatmeldung\n";
+      body += "\nGruppenchef: " + chefName;
+      body += "\nE-Mail Gruppenchef: " + chefEmail;
+      body += "\nGruppe 1: " + group1Name;
+      if (group2Name) body += "\nGruppe 2: " + group2Name;
+      if (group3Name) body += "\nGruppe 3: " + group3Name;
+
+      body += "\n\nGruppe 1 – Schützen:\n";
+      body += "Schütze;Name;Jahrgang;Sportgerät;Resultat;Zuschlag;Total\n";
+      shooters1.forEach(s => {
+        body += ["Schütze " + s.index, s.name || "-", s.year || "-", s.geraet || "-", s.result || "0", s.zuschlag || "0", s.total || "0"].join(";") + "\n";
+      });
+      body += "Summen Gruppe 1: Resultat=" + t1.sumResult + "; Zuschlag=" + t1.sumZuschlag + "; Total=" + t1.sumTotal + "\n";
+
+      body += "\nGruppe 2 – Schützen:\n";
+      body += "Schütze;Name;Jahrgang;Sportgerät;Resultat;Zuschlag;Total\n";
+      shooters2.forEach(s => {
+        body += ["Schütze " + s.index, s.name || "-", s.year || "-", s.geraet || "-", s.result || "0", s.zuschlag || "0", s.total || "0"].join(";") + "\n";
+      });
+      body += "Summen Gruppe 2: Resultat=" + t2.sumResult + "; Zuschlag=" + t2.sumZuschlag + "; Total=" + t2.sumTotal + "\n";
+
+      if (group3Enabled && shooters3.length) {
+        body += "\nGruppe 3 – Schützen:\n";
+        body += "Schütze;Name;Jahrgang;Sportgerät;Resultat;Zuschlag;Total\n";
+        shooters3.forEach(s => {
+          body += ["Schütze " + s.index, s.name || "-", s.year || "-", s.geraet || "-", s.result || "0", s.zuschlag || "0", s.total || "0"].join(";") + "\n";
+        });
+        body += "Summen Gruppe 3: Resultat=" + t3.sumResult + "; Zuschlag=" + t3.sumZuschlag + "; Total=" + t3.sumTotal + "\n";
+      }
+
+      body += "\nSieger: " + winnerText + "\n";
+      body += "Bild (bitte im Mailprogramm manuell anhängen): " + imageInfo;
+      body += "\n\nGesendet am: " + new Date().toLocaleString();
+
+      const subject = "Amtscup Cup-Duell – " + group1Name + " vs. " + (group2Name || "");
+      const mailto = "mailto:" + encodeURIComponent(RESULT_EMAIL)
+        + "?subject=" + encodeURIComponent(subject)
+        + "&body=" + encodeURIComponent(body);
+
+      window.location.href = mailto;
+    }
+
+    function setupImagePreview() {
+      const input = document.getElementById("imageUpload");
+      const preview = document.getElementById("imagePreview");
+      input.addEventListener("change", () => {
+        const file = input.files[0];
+        if (!file) { preview.style.display = "none"; preview.src = ""; return; }
+        const reader = new FileReader();
+        reader.onload = e => { preview.src = e.target.result; preview.style.display = "block"; };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      createGroupRows(1);
+      createGroupRows(2);
+
+      setupImagePreview();
+      loadSubmissions();
+
+      await loadGroups(); // wichtig: erst Gruppen laden
+
+      document.getElementById("exportBtn").addEventListener("click", exportToExcel);
+      document.getElementById("sendBtn").addEventListener("click", buildEmailAndSend);
+
+      document.getElementById("gruppe1Select").addEventListener("change", updateGroupTitles);
+      document.getElementById("gruppe2Select").addEventListener("change", updateGroupTitles);
+      document.getElementById("gruppe1Other").addEventListener("input", updateGroupTitles);
+      document.getElementById("gruppe2Other").addEventListener("input", updateGroupTitles);
+
+      const addBtn3 = document.getElementById("addGroup3Btn");
+      const row3 = document.getElementById("gruppe3Row");
+      const card3 = document.getElementById("gruppe3Card");
+
+      addBtn3.addEventListener("click", async () => {
+        if (!group3Enabled) {
+          group3Enabled = true;
+          row3.style.display = "flex";
+          card3.style.display = "block";
+          createGroupRows(3);
+          await loadGroups();
+          addBtn3.textContent = "3. Gruppe entfernen";
+        } else {
+          if (!confirm("3. Gruppe und alle erfassten Daten wirklich entfernen?")) return;
+          group3Enabled = false;
+          row3.style.display = "none";
+          card3.style.display = "none";
+          document.getElementById("gruppe3Other").value = "";
+          document.getElementById("gruppe3Select").value = "";
+          const tbody3 = document.getElementById("shootersBody3");
+          if (tbody3) tbody3.innerHTML = "";
+          document.getElementById("sumResult3").textContent = "";
+          document.getElementById("sumZuschlag3").textContent = "";
+          document.getElementById("sumTotal3").textContent = "";
+          addBtn3.textContent = "➕ 3. Gruppe hinzufügen (optional)";
+          updateTotals();
+        }
+        updateGroupTitles();
+      });
+
+      const g3Select = document.getElementById("gruppe3Select");
+      const g3Other = document.getElementById("gruppe3Other");
+      if (g3Select) g3Select.addEventListener("change", updateGroupTitles);
+      if (g3Other) g3Other.addEventListener("input", updateGroupTitles);
+    });
+  </script>
+</body>
+</html>
