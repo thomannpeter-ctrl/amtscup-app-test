@@ -86,8 +86,8 @@ font-size:1rem;cursor:pointer;background:#2563eb;color:#fff;width:100%
 <script>
 /* ================= ZUSCHLÄGE ================= */
 const ZUSCHLAG_MAP = {
-  "FG": 0,
   "Standard": 0,
+  "FG": 0,
   "Karabiner": 4,
   "57/02": 8,
   "57/03": 4,
@@ -145,6 +145,8 @@ function createGroup(n){
       <td>
         <select onchange="calc(${n})">
           <option value="">–</option>
+          <option>Standard</option>
+          <option>FG</option>
           <option>Karabiner</option>
           <option>57/02</option>
           <option>57/03</option>
@@ -170,7 +172,7 @@ function calc(n){
       const select=tr.querySelector("select");
       const inputs=tr.querySelectorAll("input");
       const res=Number(inputs[2].value)||0;
-      const z=ZUSCHLAG_MAP[select.value]||0;
+      const z=ZUSCHLAG_MAP[select.value] ?? 0;
 
       tr.querySelector(".z").textContent=z;
       tr.querySelector(".t").textContent=res+z;
