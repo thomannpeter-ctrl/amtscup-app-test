@@ -1,43 +1,35 @@
 <!doctype html>
 <html lang="de">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8">
 <title>Amtscup – Cup-Duell</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-*{box-sizing:border-box}
-body{font-family:system-ui,sans-serif;background:#eef2f7;margin:0;color:#111827}
-.container{max-width:1100px;margin:auto;padding:1rem}
-h1{color:#1e3a8a;margin:0 0 1rem}
-h2{color:#1d4ed8;margin:0 0 .5rem}
-.card{background:#fff;border-radius:14px;padding:1rem 1.25rem;box-shadow:0 4px 10px rgba(15,23,42,.08);margin-bottom:1rem}
-.row{display:flex;flex-wrap:wrap;gap:.75rem}
-.field{flex:1;min-width:180px}
-label{font-size:.8rem;font-weight:600;color:#374151}
-input,select{width:100%;padding:.5rem;border-radius:8px;border:1px solid #cbd5f5}
+body{font-family:system-ui,sans-serif;background:#eef2f7;margin:0;color:#111}
+.container{max-width:1200px;margin:auto;padding:1rem}
+h1{color:#1e3a8a}
+h2{color:#2563eb;margin:.5rem 0}
+.card{background:#fff;border-radius:14px;padding:1rem 1.2rem;
+box-shadow:0 4px 10px rgba(0,0,0,.08);margin-bottom:1rem}
+.row{display:flex;gap:.75rem;flex-wrap:wrap}
+.field{flex:1;min-width:220px}
+label{font-size:.8rem;font-weight:600}
+input,select{width:100%;padding:.45rem;border-radius:8px;border:1px solid #cbd5f5}
 
-table{width:100%;border-collapse:collapse;font-size:.85rem}
-th,td{border:1px solid #e5e7eb;padding:.4rem;text-align:center}
+table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:.5rem}
+th,td{border:1px solid #e5e7eb;padding:.35rem;text-align:center}
 th{background:#dbeafe}
-tfoot th{background:#eff6ff;text-align:right}
-.sumcell{background:#f3f4f6;font-weight:700}
-td input, td select{width:100%;border:1px solid #cbd5f5;border-radius:8px;padding:.35rem}
+.sum{background:#f3f4f6;font-weight:700}
 
 button{
-  border:none;border-radius:999px;padding:.8rem 1.2rem;
-  font-size:1rem;cursor:pointer;background:#2563eb;color:white;width:100%;
-}
+border:none;border-radius:999px;padding:.9rem;
+font-size:1rem;background:#2563eb;color:#fff;width:100%;cursor:pointer}
 
-.winner{padding:.6rem .9rem;border-radius:999px;font-weight:700;display:inline-block}
-.w-none{background:#e5e7eb;color:#374151}
-.w-win{background:#dcfce7;color:#166534}
-.w-top2{background:#fef9c3;color:#854d0e}
-
-@media(max-width:768px){
-  .row{flex-direction:column}
-  table{display:block;overflow-x:auto;white-space:nowrap}
-}
+.winner{padding:.6rem;border-radius:999px;font-weight:700}
+.w1{background:#dcfce7;color:#166534}
+.w2{background:#dbeafe;color:#1d4ed8}
+.none{background:#e5e7eb}
 </style>
 </head>
 
@@ -47,316 +39,168 @@ button{
 <h1>Amtscup – Cup-Duell</h1>
 
 <div class="card">
-  <h2>1. Gruppenchef</h2>
-  <div class="row">
-    <div class="field">
-      <label>Name</label>
-      <input id="chef" autocomplete="name">
-    </div>
-    <div class="field">
-      <label>E-Mail</label>
-      <input id="email" type="email" autocomplete="email">
-    </div>
-  </div>
+<h2>1. Gruppenchef</h2>
+<div class="row">
+<div class="field"><label>Name</label><input id="chef"></div>
+<div class="field"><label>E-Mail</label><input id="email" type="email"></div>
+</div>
 </div>
 
 <div class="card">
-  <h2>2. Gruppenwahl</h2>
-  <div class="row">
-    <div class="field">
-      <label>Gruppe 1 *</label>
-      <select id="g1"></select>
-    </div>
-    <div class="field">
-      <label>Gruppe 2 *</label>
-      <select id="g2"></select>
-    </div>
-    <div class="field">
-      <label>Gruppe 3 (optional)</label>
-      <select id="g3"></select>
-    </div>
-  </div>
+<h2>2. Gruppenwahl</h2>
+<div class="row">
+<div class="field"><label>Gruppe 1 *</label><select id="g1"></select></div>
+<div class="field"><label>Gruppe 2 *</label><select id="g2"></select></div>
+<div class="field"><label>Gruppe 3 (optional)</label><select id="g3"></select></div>
+</div>
 </div>
 
 <div id="groups"></div>
 
 <div class="card">
-  <h2>Sieger</h2>
-  <div id="winner" class="winner w-none">Noch keine Resultate</div>
+<h2>Sieger</h2>
+<div id="winner" class="winner none">Noch keine Resultate</div>
 </div>
 
 <div class="card">
-  <button type="button" onclick="sendResult()">📧 Resultat senden</button>
+<button onclick="sendResult()">📧 Resultat senden</button>
 </div>
 
 </div>
 
 <script>
 /* ================= KONFIG ================= */
-const RESULT_EMAIL = "thomannpeter@bluewin.ch";
+const SCRIPT_URL = "HIER_DEIN_GOOGLE_SCRIPT_URL";
+const RESULT_MAIL = "thomannpeter@bluewin.ch";
 
-/* ✅ HIER DEINE WEBAPP-URL EINSETZEN */
-const SCRIPT_URL = "https://script.google.com/macros/s/DEINE_ID/exec";
+/* ================= SPORTGERÄTE ================= */
+const GERAETE = {
+ "Standard":0,
+ "FG":0,
+ "Karabiner":4,
+ "57/02":8,
+ "57/03":4,
+ "90BK":4,
+ "90RK":4
+};
 
-/* Disziplin (wird in Tabelle geschrieben) */
-const DISZIPLIN = "Amtscup";
+/* ================= INIT ================= */
+window.addEventListener("DOMContentLoaded", async ()=>{
+ createGroup(1); createGroup(2); createGroup(3);
+ await loadGroups();
+});
 
-/* ================= ZUSCHLÄGE ================= */
-const SPORTGERAETE = [
-  { name:"", zuschlag:0 },
-  { name:"Standard", zuschlag:0 },
-  { name:"FG", zuschlag:0 },
-  { name:"Karabiner", zuschlag:4 },
-  { name:"57/02", zuschlag:8 },
-  { name:"57/03", zuschlag:4 },
-  { name:"90BK", zuschlag:4 },
-  { name:"90RK", zuschlag:4 }
-];
-
-function zuschlagFor(name){
-  const f = SPORTGERAETE.find(x => x.name === name);
-  return f ? f.zuschlag : 0;
-}
-
-/* ================= GRUPPEN LADEN ================= */
+/* ================= GRUPPEN ================= */
 async function loadGroups(){
-  const r = await fetch("gruppen.txt?ts=" + Date.now(), { cache:"no-store" });
-  const list = r.ok ? (await r.text()).split(/\r?\n/).map(x=>x.trim()).filter(Boolean) : [];
-
-  ["g1","g2","g3"].forEach(id=>{
-    const s = document.getElementById(id);
-    s.innerHTML = "<option value=''>Bitte wählen …</option>";
-    list.forEach(g=>{
-      const o=document.createElement("option");
-      o.value=o.textContent=g;
-      s.appendChild(o);
-    });
+ const r = await fetch("gruppen.txt?ts="+Date.now());
+ const list = (await r.text()).split(/\r?\n/).filter(x=>x.trim());
+ ["g1","g2","g3"].forEach(id=>{
+  const s=document.getElementById(id);
+  s.innerHTML="<option value=''>Bitte wählen …</option>";
+  list.forEach(g=>{
+   const o=document.createElement("option");
+   o.value=o.textContent=g; s.appendChild(o);
   });
-
-  // optional: Gruppe 1/2 etwas "sicherer" erzwingen
-  document.getElementById("g1").addEventListener("change", updateTitles);
-  document.getElementById("g2").addEventListener("change", updateTitles);
-  document.getElementById("g3").addEventListener("change", updateTitles);
-
-  updateTitles();
+ });
 }
 
-/* ================= UI ERZEUGEN ================= */
-function createGroupCard(n){
-  const c = document.createElement("div");
-  c.className = "card";
-  c.id = "group" + n;
-
-  c.innerHTML = `
-    <h2 id="title${n}">Gruppe ${n}</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Name</th>
-          <th>Jahrgang</th>
-          <th>Sportgerät</th>
-          <th>Resultat</th>
-          <th>Zuschlag</th>
-          <th>Total</th>
-        </tr>
-      </thead>
-      <tbody id="tb${n}"></tbody>
-      <tfoot>
-        <tr>
-          <th colspan="4">Summen</th>
-          <th id="sumRes${n}" class="sumcell">0</th>
-          <th id="sumZus${n}" class="sumcell">0</th>
-          <th id="sumTot${n}" class="sumcell">0</th>
-        </tr>
-      </tfoot>
-    </table>
-  `;
-
-  const tb = c.querySelector("#tb" + n);
-  for(let i=1;i<=5;i++){
-    const tr=document.createElement("tr");
-    tr.innerHTML = `
-      <td>${i}</td>
-      <td><input class="name"></td>
-      <td><input class="year" type="number" min="1900" max="2100"></td>
-      <td>
-        <select class="gear"></select>
-      </td>
-      <td><input class="res" type="number" min="0"></td>
-      <td class="zusch">0</td>
-      <td class="total">0</td>
-    `;
-    tb.appendChild(tr);
-
-    const sel = tr.querySelector(".gear");
-    SPORTGERAETE.forEach(g=>{
-      const o=document.createElement("option");
-      o.value=o.textContent=g.name;
-      sel.appendChild(o);
-    });
-
-    sel.addEventListener("change", ()=>recalcGroup(n));
-    tr.querySelector(".res").addEventListener("input", ()=>recalcGroup(n));
-  }
-
-  document.getElementById("groups").appendChild(c);
-}
-
-function updateTitles(){
-  [1,2,3].forEach(n=>{
-    const v = document.getElementById("g"+n).value;
-    const t = document.getElementById("title"+n);
-    t.textContent = v ? `${n} ${v}` : `Gruppe ${n}`;
-  });
+/* ================= TABELLEN ================= */
+function createGroup(n){
+ const d=document.createElement("div");
+ d.className="card"; d.id="group"+n;
+ d.innerHTML=`
+ <h2 id="title${n}">Gruppe ${n}</h2>
+ <table>
+ <thead><tr>
+ <th>#</th><th>Name</th><th>Jahrgang</th><th>Sportgerät</th>
+ <th>Resultat</th><th>Zuschlag</th><th>Total</th>
+ </tr></thead>
+ <tbody></tbody>
+ <tfoot>
+ <tr><th colspan="4">Summen</th>
+ <th id="sr${n}" class="sum">0</th>
+ <th id="sz${n}" class="sum">0</th>
+ <th id="st${n}" class="sum">0</th>
+ </tr>
+ </tfoot>
+ </table>`;
+ const tb=d.querySelector("tbody");
+ for(let i=1;i<=5;i++){
+  tb.innerHTML+=`
+  <tr>
+  <td>${i}</td>
+  <td><input></td>
+  <td><input type="number"></td>
+  <td><select onchange="calc(${n})">
+   ${Object.keys(GERAETE).map(g=>`<option>${g}</option>`).join("")}
+  </select></td>
+  <td><input type="number" oninput="calc(${n})"></td>
+  <td class="z">0</td>
+  <td class="t">0</td>
+  </tr>`;
+ }
+ document.getElementById("groups").appendChild(d);
 }
 
 /* ================= BERECHNUNG ================= */
-function recalcGroup(n){
-  let sumRes=0, sumZus=0, sumTot=0;
-
-  document.querySelectorAll(`#group${n} tbody tr`).forEach(tr=>{
-    const gear = tr.querySelector(".gear").value;
-    const res = Number(tr.querySelector(".res").value || 0);
-    const zus = zuschlagFor(gear);
-    const tot = res + zus;
-
-    tr.querySelector(".zusch").textContent = zus;
-    tr.querySelector(".total").textContent = tot;
-
-    sumRes += res;
-    sumZus += zus;
-    sumTot += tot;
-  });
-
-  document.getElementById("sumRes"+n).textContent = sumRes;
-  document.getElementById("sumZus"+n).textContent = sumZus;
-  document.getElementById("sumTot"+n).textContent = sumTot;
-
-  recalcWinner();
+function calc(n){
+ let sr=0,sz=0,st=0;
+ document.querySelectorAll(`#group${n} tbody tr`).forEach(tr=>{
+  const r=+tr.children[4].firstChild.value||0;
+  const g=tr.children[3].firstChild.value;
+  const z=GERAETE[g]||0;
+  tr.children[5].textContent=z;
+  tr.children[6].textContent=r+z;
+  sr+=r; sz+=z; st+=r+z;
+ });
+ sr${n}.textContent=sr;
+ sz${n}.textContent=sz;
+ st${n}.textContent=st;
+ updateWinner();
 }
 
-function recalcWinner(){
-  const groups = [];
-  [1,2,3].forEach(n=>{
-    const gname = document.getElementById("g"+n).value;
-    if(!gname) return;
-    const total = Number(document.getElementById("sumTot"+n).textContent || 0);
-    if(total<=0) return;
-    groups.push({ n, total });
-  });
-
-  const w = document.getElementById("winner");
-
-  if(groups.length < 2){
-    w.className = "winner w-none";
-    w.textContent = "Noch keine Resultate";
-    return;
-  }
-
-  groups.sort((a,b)=>b.total-a.total);
-
-  if(groups.length === 2){
-    w.className = "winner w-win";
-    w.textContent = `🏆 Sieger: Gruppe ${groups[0].n} (${groups[0].total})`;
-    return;
-  }
-
-  // 3 Gruppen -> Top 2
-  w.className = "winner w-top2";
-  w.textContent = `🥇 Gruppe ${groups[0].n} (${groups[0].total})  |  🥈 Gruppe ${groups[1].n} (${groups[1].total})`;
+/* ================= SIEGER ================= */
+function updateWinner(){
+ const sums=[
+  {n:1,v:+st1.textContent},
+  {n:2,v:+st2.textContent},
+  {n:3,v:+st3.textContent}
+ ].filter(x=>x.v>0);
+ if(!sums.length){winner.textContent="Noch keine Resultate";return;}
+ sums.sort((a,b)=>b.v-a.v);
+ if(sums.length===2){
+  winner.className="winner w1";
+  winner.textContent=`🏆 Sieger: Gruppe ${sums[0].n} (${sums[0].v})`;
+ }else{
+  winner.className="winner w1";
+  winner.textContent=`🏆 Sieger: Gruppe ${sums[0].n} & Gruppe ${sums[1].n}`;
+ }
 }
 
 /* ================= SENDEN ================= */
 function sendResult(){
-  const g1 = document.getElementById("g1").value;
-  const g2 = document.getElementById("g2").value;
-  const g3 = document.getElementById("g3").value;
-
-  if(!g1 || !g2){
-    alert("Bitte mindestens Gruppe 1 und Gruppe 2 auswählen.");
-    return;
-  }
-
-  const chefName = document.getElementById("chef").value.trim();
-  const chefEmail = document.getElementById("email").value.trim();
-
-  // Mailtext bauen
-  let mail = "AMTSCUP – CUP-DUELL\n\n";
-  mail += "GRUPPENCHEF\n";
-  mail += `${chefName};${chefEmail}\n\n`;
-
-  const entries = [];
-
-  [1,2,3].forEach(n=>{
-    const gruppe = document.getElementById("g"+n).value;
-    if(!gruppe) return;
-
-    const sumRes = document.getElementById("sumRes"+n).textContent;
-    const sumZus = document.getElementById("sumZus"+n).textContent;
-    const sumTot = document.getElementById("sumTot"+n).textContent;
-
-    mail += `GRUPPE ${n};${gruppe}\n`;
-    mail += "Name;Jahrgang;Sportgerät;Resultat;Zuschlag;Total\n";
-
-    document.querySelectorAll(`#group${n} tbody tr`).forEach(tr=>{
-      const name = tr.querySelector(".name").value.trim();
-      const year = tr.querySelector(".year").value.trim();
-      const gear = tr.querySelector(".gear").value.trim();
-      const res  = tr.querySelector(".res").value.trim();
-      const zus  = tr.querySelector(".zusch").textContent;
-      const tot  = tr.querySelector(".total").textContent;
-
-      // leere Zeilen ignorieren
-      if(!name && !year && !gear && !res) return;
-
-      mail += `${name};${year};${gear};${res};${zus};${tot}\n`;
-
-      entries.push({
-        disziplin: DISZIPLIN,
-        chef: chefName,
-        email: chefEmail,
-        gruppe: gruppe,
-        name: name,
-        jahrgang: year,
-        sportgeraet: gear,
-        resultat: res,
-        zuschlag: zus,
-        total: tot,
-        summe_gruppe: sumTot
-      });
-    });
-
-    mail += `SUMMEN;;;;${sumRes};${sumZus};${sumTot}\n\n`;
+ let body="AMTSCUP CUP-DUELL\n\n";
+ body+=`Gruppenchef: ${chef.value}\nE-Mail: ${email.value}\n\n`;
+ [1,2,3].forEach(n=>{
+  if(!+st${n}.textContent) return;
+  body+=`Gruppe ${n}\nName;Jahrgang;Gerät;Resultat;Zuschlag;Total\n`;
+  document.querySelectorAll(`#group${n} tbody tr`).forEach(tr=>{
+   const i=[...tr.querySelectorAll("input,select")].map(x=>x.value);
+   if(!i[0]) return;
+   body+=`${i[0]};${i[1]};${i[2]};${i[3]};${tr.children[5].textContent};${tr.children[6].textContent}\n`;
   });
+  body+=`SUMME;;;;${sz${n}.textContent};${st${n}.textContent}\n\n`;
+ });
+ location.href="mailto:"+RESULT_MAIL+
+ "?subject="+encodeURIComponent("Amtscup Cup-Duell")+
+ "&body="+encodeURIComponent(body);
 
-  // Siegertext
-  mail += "SIEGER\n" + document.getElementById("winner").textContent + "\n";
-
-  // Mail öffnen
-  window.location.href =
-    "mailto:" + RESULT_EMAIL +
-    "?subject=" + encodeURIComponent("Amtscup – Cup-Duell Resultat") +
-    "&body=" + encodeURIComponent(mail);
-
-  // Google Tabelle senden
-  if(SCRIPT_URL && SCRIPT_URL.includes("script.google.com")){
-    fetch(SCRIPT_URL, {
-      method: "POST",
-      headers: {"Content-Type":"application/x-www-form-urlencoded"},
-      body: "payload=" + encodeURIComponent(JSON.stringify({ entries }))
-    }).catch(()=>{});
-  } else {
-    alert("SCRIPT_URL ist nicht gesetzt / falsch.");
-  }
+ fetch(SCRIPT_URL,{
+  method:"POST",
+  headers:{"Content-Type":"application/x-www-form-urlencoded"},
+  body:"payload="+encodeURIComponent(JSON.stringify({mail:body}))
+ });
 }
-
-/* ================= START ================= */
-createGroupCard(1);
-createGroupCard(2);
-createGroupCard(3);
-loadGroups();
-updateTitles();
 </script>
 </body>
 </html>
