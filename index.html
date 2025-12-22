@@ -4,40 +4,50 @@
 <meta charset="UTF-8">
 <title>Amtscup – Cup-Duell</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
-body{font-family:system-ui;background:#f1f5f9;margin:0}
-.container{max-width:1200px;margin:auto;padding:16px}
-.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(0,0,0,.08)}
+body{font-family:system-ui,sans-serif;background:#eef2f7;margin:0;color:#111}
+.container{max-width:1100px;margin:auto;padding:1rem}
 h1{color:#1e3a8a}
-h2{color:#2563eb;margin:0 0 8px}
-table{width:100%;border-collapse:collapse}
-th,td{border:1px solid #e5e7eb;padding:6px;text-align:center}
+.card{background:#fff;border-radius:14px;padding:1rem 1.25rem;
+box-shadow:0 4px 10px rgba(0,0,0,.08);margin-bottom:1rem}
+.row{display:flex;gap:1rem;flex-wrap:wrap}
+.field{flex:1;min-width:220px}
+label{font-size:.8rem;font-weight:600}
+input,select{width:100%;padding:.45rem;border-radius:8px;border:1px solid #cbd5f5}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{border:1px solid #e5e7eb;padding:.4rem;text-align:center}
 th{background:#dbeafe}
-input,select{width:100%;padding:6px;border-radius:6px;border:1px solid #c7d2fe}
-tfoot td{font-weight:700;background:#f8fafc}
-button{width:100%;padding:14px;border:none;border-radius:999px;background:#2563eb;color:#fff;font-size:16px;cursor:pointer}
-.winner{background:#dcfce7;color:#166534;padding:12px;border-radius:999px;font-weight:700}
+.sum{background:#f3f4f6;font-weight:700}
+button{width:100%;padding:.8rem;border:none;border-radius:999px;
+background:#2563eb;color:#fff;font-size:1rem;cursor:pointer}
+.winner{background:#dcfce7;padding:.6rem;border-radius:999px;font-weight:700}
 </style>
 </head>
 
 <body>
 <div class="container">
+
 <h1>Amtscup – Cup-Duell</h1>
 
 <div class="card">
 <h2>1. Gruppenchef</h2>
-<input id="chef" placeholder="Name Gruppenchef">
-<input id="email" placeholder="E-Mail" style="margin-top:8px">
+<div class="row">
+<div class="field"><label>Name</label><input id="chef"></div>
+<div class="field"><label>E-Mail</label><input id="email"></div>
+</div>
 </div>
 
 <div class="card">
 <h2>2. Gruppenauswahl</h2>
+<div class="row">
 <select id="g1"></select>
 <select id="g2"></select>
 <select id="g3"></select>
 </div>
+</div>
 
-<div id="tables"></div>
+<div id="groups"></div>
 
 <div class="card">
 <h2>Sieger</h2>
@@ -45,133 +55,126 @@ button{width:100%;padding:14px;border:none;border-radius:999px;background:#2563e
 </div>
 
 <div class="card">
-<button onclick="send()">📧 Resultat senden</button>
+<button onclick="sendResult()">📧 Resultat senden</button>
 </div>
+
 </div>
 
 <script>
-const SCRIPT_URL = "HIER_DEINE_GOOGLE_SCRIPT_WEBAPP_URL";
+const SPORT = {
+  "":0,
+  "Standard":0,
+  "FG":0,
+  "Karabiner":4,
+  "57/02":8,
+  "57/03":4,
+  "90BK":4,
+  "90RK":4
+};
 
-const GROUPS=[
-"",
-"1 Heim 1 A071 Worber Sportschützen Querschleger",
-"1 Gast 1 A001 Aareschützen Kiesen Oppligen Aare",
-"1 Gast 1 A037 Linden FS Innerbirrmoos"
+const GROUPS = [
+  "1 Heim 1 A071 Worber Sportschützen Querschleger",
+  "1 Gast 1 A001 Aareschützen Kiesen Oppligen Aare",
+  "1 Gast 1 A037 Linden FS Innerbirrmoos"
 ];
 
-const GERAETE=[
-["",0],
-["Standard",0],
-["FG",0],
-["Karabiner",4],
-["57/02",8],
-["57/03",4],
-["90BK",4],
-["90RK",4]
-];
-
-[g1,g2,g3].forEach(sel=>{
-GROUPS.forEach(g=>sel.innerHTML+=`<option value="${g}">${g||"Bitte wählen…"}</option>`);
-sel.onchange=render;
-});
+function fillGroups(){
+  ["g1","g2","g3"].forEach(id=>{
+    const s=document.getElementById(id);
+    s.innerHTML="<option value=''>Bitte wählen…</option>";
+    GROUPS.forEach(g=>{
+      const o=document.createElement("option");
+      o.value=o.textContent=g;
+      s.appendChild(o);
+    });
+    s.onchange=render;
+  });
+}
 
 function render(){
-tables.innerHTML="";
-[1,2,3].forEach(n=>{
-const g=document.getElementById("g"+n).value;
-if(!g)return;
-tables.innerHTML+=groupTable(n,g);
-});
-calcWinner();
+  const wrap=document.getElementById("groups");
+  wrap.innerHTML="";
+  ["g1","g2","g3"].forEach((id,i)=>{
+    const name=document.getElementById(id).value;
+    if(!name) return;
+    wrap.appendChild(makeGroup(i+1,name));
+  });
+  calcAll();
 }
 
-function groupTable(n,name){
-let rows="";
-for(let i=1;i<=5;i++){
-rows+=`
-<tr>
-<td>${i}</td>
-<td><input></td>
-<td><input></td>
-<td>
-<select onchange="calcRow(this)">
-${GERAETE.map(g=>`<option value="${g[1]}">${g[0]}</option>`).join("")}
-</select>
-</td>
-<td><input type="number" oninput="calcRow(this)"></td>
-<td class="z">0</td>
-<td class="t">0</td>
-</tr>`;
-}
-return `
-<div class="card">
-<h2>Gruppe ${n}: ${name}</h2>
-<table id="group${n}">
-<thead>
-<tr><th>#</th><th>Name</th><th>Jahrgang</th><th>Sportgerät</th><th>Resultat</th><th>Zuschlag</th><th>Total</th></tr>
-</thead>
-<tbody>${rows}</tbody>
-<tfoot>
-<tr>
-<td colspan="4">Summe</td>
-<td id="sr${n}">0</td>
-<td id="sz${n}">0</td>
-<td id="st${n}">0</td>
-</tr>
-</tfoot>
-</table>
-</div>`;
+function makeGroup(n,name){
+  const c=document.createElement("div");
+  c.className="card";
+  c.innerHTML=`
+  <h2>Gruppe ${n}: ${name}</h2>
+  <table id="t${n}">
+  <tr><th>#</th><th>Name</th><th>Jahrgang</th><th>Sportgerät</th><th>Resultat</th><th>Zuschlag</th><th>Total</th></tr>
+  ${[1,2,3,4,5].map(i=>`
+  <tr>
+    <td>${i}</td>
+    <td><input></td>
+    <td><input></td>
+    <td><select onchange="calcAll()">
+      ${Object.keys(SPORT).map(k=>`<option>${k}</option>`).join("")}
+    </select></td>
+    <td><input oninput="calcAll()"></td>
+    <td class="z">0</td>
+    <td class="t">0</td>
+  </tr>`).join("")}
+  <tr class="sum"><td colspan="4">Summe</td>
+  <td class="sr">0</td><td class="sz">0</td><td class="st">0</td></tr>
+  </table>`;
+  return c;
 }
 
-function calcRow(el){
-const tr=el.closest("tr");
-const res=+tr.children[4].querySelector("input").value||0;
-const zus=+tr.children[3].querySelector("select").value||0;
-tr.children[5].textContent=zus;
-tr.children[6].textContent=res+zus;
-sumAll();
+function calcAll(){
+  let totals=[];
+  document.querySelectorAll("table").forEach(t=>{
+    let sr=0,sz=0,st=0;
+    t.querySelectorAll("tr").forEach(r=>{
+      const sel=r.querySelector("select");
+      const res=r.querySelector("input[oninput]");
+      if(!sel||!res) return;
+      const z=SPORT[sel.value]||0;
+      const rv=+res.value||0;
+      r.querySelector(".z").textContent=z;
+      r.querySelector(".t").textContent=rv+z;
+      sr+=rv; sz+=z; st+=rv+z;
+    });
+    t.querySelector(".sr").textContent=sr;
+    t.querySelector(".sz").textContent=sz;
+    t.querySelector(".st").textContent=st;
+    totals.push(st);
+  });
+
+  const w=document.getElementById("winner");
+  if(totals.length<2){w.textContent="Noch keine Resultate";return;}
+  const sorted=[...totals].sort((a,b)=>b-a);
+  w.textContent = totals.length===2
+    ? "🏆 Sieger: Gruppe "+(totals.indexOf(sorted[0])+1)
+    : "🏆 Sieger: Gruppe "+(totals.indexOf(sorted[0])+1)+
+      " & Gruppe "+(totals.indexOf(sorted[1])+1);
 }
 
-function sumAll(){
-[1,2,3].forEach(n=>{
-const t=document.getElementById("group"+n);
-if(!t)return;
-let r=0,z=0,tt=0;
-t.querySelectorAll("tbody tr").forEach(tr=>{
-r+=+tr.children[4].querySelector("input").value||0;
-z+=+tr.children[5].textContent||0;
-tt+=+tr.children[6].textContent||0;
-});
-document.getElementById("sr"+n).textContent=r;
-document.getElementById("sz"+n).textContent=z;
-document.getElementById("st"+n).textContent=tt;
-});
-calcWinner();
+function sendResult(){
+  let body="Amtscup Resultat\n\n";
+  document.querySelectorAll("table").forEach((t,i)=>{
+    body+="Gruppe "+(i+1)+"\n";
+    t.querySelectorAll("tr").forEach((r,j)=>{
+      if(j===0||j===6) return;
+      const c=r.querySelectorAll("input,select,.t");
+      body+=[...c].map(x=>x.value||x.textContent).join(";")+"\n";
+    });
+    body+="\n";
+  });
+  location.href="mailto:thomannpeter@bluewin.ch?subject=Amtscup Resultat&body="+encodeURIComponent(body);
 }
 
-function calcWinner(){
-const arr=[];
-[1,2,3].forEach(n=>{
-const g=document.getElementById("g"+n).value;
-const t=document.getElementById("st"+n);
-if(g && t && +t.textContent>0)arr.push({g,total:+t.textContent});
+window.addEventListener("DOMContentLoaded",()=>{
+  fillGroups();
+  render();
 });
-if(arr.length<2){winner.textContent="Noch keine Resultate";return;}
-arr.sort((a,b)=>b.total-a.total);
-winner.textContent=
-arr.length===2
-?`🏆 Sieger: ${arr[0].g} (${arr[0].total})`
-:`🏆 Sieger: ${arr[0].g} (${arr[0].total}) & ${arr[1].g} (${arr[1].total})`;
-}
-
-function send(){
-fetch(SCRIPT_URL,{
-method:"POST",
-headers:{"Content-Type":"application/x-www-form-urlencoded"},
-body:"payload="+encodeURIComponent(JSON.stringify({info:"Amtscup Resultat gesendet"}))
-});
-location.href="mailto:thomannpeter@bluewin.ch?subject=Amtscup Resultat";
-}
 </script>
+
 </body>
 </html>
