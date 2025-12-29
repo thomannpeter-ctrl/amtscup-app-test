@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Amtscup – Cup-Duell</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui,sans-serif;background:#eef2f7;margin:0;color:#111827}
@@ -60,13 +61,19 @@ button{border:none;border-radius:999px;padding:.8rem;font-size:1rem;cursor:point
 </div>
 
 <div class="card">
-<button onclick="sendResult()">📧 Resultat senden</button>
+<button onclick="sendResult()">📧 Resultat per Mail senden</button>
+</div>
+
+<div class="card">
+<button onclick="sendToGoogle()">📊 In Google Tabelle speichern</button>
 </div>
 
 </div>
 
 <script>
-const RESULT_EMAIL="thomannpeter@bluewin.ch";
+/* ================= KONFIG ================= */
+const RESULT_EMAIL = "thomannpeter@bluewin.ch";
+const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbzv3eifzrGNnxJ46NyofE_g-T_TcuGC37BxtkpKKoDh97NFn8c56rAujWMYnA1DlZos_g/exec";
 
 const SPORTGERAETE=[
  {n:"",z:0},{n:"Standard",z:0},{n:"FG",z:0},
@@ -74,6 +81,8 @@ const SPORTGERAETE=[
  {n:"90BK",z:4},{n:"90RK",z:4}
 ];
 const zus=g=>(SPORTGERAETE.find(x=>x.n===g)||{z:0}).z;
+
+/* ================= APP ================= */
 
 async function loadGroups(){
  const r=await fetch("gruppen.txt?ts="+Date.now());
@@ -158,7 +167,7 @@ function calcWinner(){
   winner.innerHTML=`🏆 Sieger: ${d[0].n} (${d[0].t}) & ${d[1].n} (${d[1].t})<br>❌ Verlierer: ${d[2].n} (${d[2].t})`;
 }
 
-/* ✅ MAILTO – DAS FEHLTE */
+/* ===== Mail ===== */
 function sendResult(){
  let body=`AMTSCUP CUP-DUELL\n\nGruppenchef: ${chef.value}\nE-Mail: ${email.value}\n\n`;
  document.querySelectorAll("#groups .card").forEach((c,i)=>{
@@ -166,17 +175,45 @@ function sendResult(){
   body+="Name;Jahrgang;Sportgerät;Resultat;Zuschlag;Total\n";
   c.querySelectorAll("tbody tr").forEach(tr=>{
    const n=tr.querySelector(".n").value;
-   const y=tr.querySelector(".y").value;
-   const g=tr.querySelector(".g").value;
    const r=tr.querySelector(".r").value;
-   const z=tr.querySelector(".z").textContent;
-   const t=tr.querySelector(".t").textContent;
-   if(n||r) body+=`${n};${y};${g};${r};${z};${t}\n`;
+   if(n||r)
+    body+=`${n};${tr.querySelector(".y").value};${tr.querySelector(".g").value};${r};${tr.querySelector(".z").textContent};${tr.querySelector(".t").textContent}\n`;
   });
-  body+=`\n`;
+  body+="\n";
  });
  body+="SIEGER:\n"+winner.textContent;
  location.href=`mailto:${RESULT_EMAIL}?subject=${encodeURIComponent("Amtscup Resultat")}&body=${encodeURIComponent(body)}`;
+}
+
+/* ===== Google Tabelle ===== */
+function sendToGoogle(){
+ const rows=[];
+ document.querySelectorAll("#groups .card").forEach(c=>{
+  const gruppe=c.dataset.name;
+  c.querySelectorAll("tbody tr").forEach(tr=>{
+   const name=tr.querySelector(".n").value;
+   const r=tr.querySelector(".r").value;
+   if(!name&&!r) return;
+   rows.push({
+     gruppe,
+     name,
+     jahr:tr.querySelector(".y").value,
+     geraet:tr.querySelector(".g").value,
+     resultat:r,
+     zuschlag:tr.querySelector(".z").textContent,
+     total:tr.querySelector(".t").textContent
+   });
+  });
+ });
+
+ fetch(GOOGLE_URL,{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({chef:chef.value,email:email.value,rows})
+ })
+ .then(r=>r.json())
+ .then(()=>alert("✅ Erfolgreich in Google Tabelle gespeichert"))
+ .catch(()=>alert("❌ Fehler beim Senden"));
 }
 
 loadGroups();
