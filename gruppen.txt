@@ -1,75 +1,21 @@
-1 Heim	1	A071	Worber Sportschützen	Querschleger
-1 Gast	1	A001	Aareschützen Kiesen Oppligen	Aare
-1 Gast	1	A037	Linden FS	Innerbirrmoos
-2 Heim	1	A065	Trimstein Eichi FS	Sius
-2 Gast	1	A028	Konolfingen SG	Eiger
-3 Heim	1	A048	Oberthal MS	Kapfwald
-3 Gast	1	A011	Bowil MS	A- Team
-4 Heim	1	A056	Sportschützen Furth	Kobra
-4 Gast	1	A029	Konolfingen SG	Galgenhoger
-5 Heim	1	A045	Oberthal MS	Eintracht
-5 Gast	1	A053	Schützen Grosshöchstetten	Blitz
-6 Heim	1	A016	Falkenfluh-Schützen	Feuerstein
-6 Gast	1	A070	Worber Sportschützen	Granate
-7 Heim	1	A039	Linden FS	Latärndli 08
-7 Gast	1	A049	Oberthal MS	TEAM 2014
-8 Heim	1	A006	Arni FS	Agrist
-8 Gast	1	A063	Trimstein Eichi FS	Jägermeister
-9 Heim	1	A017	Falkenfluh-Schützen	Wagenheber
-9 Gast	1	A031	Konolfingen SG	Pänguins
-10 Heim	1	A047	Oberthal MS	Hasechlupf
-10 Gast	1	A057	Sportschützen Furth	Pflümli
-11 Heim	1	A034	Kratzmattschützen	Elenor
-11 Gast	1	A064	Trimstein Eichi FS	Rambo
-12 Heim	1	A068	Wichtrach Schützen	Luchs
-12 Gast	1	A035	Kratzmattschützen	Schützenbrüder
-13 Heim	1	A022	Häutligen FS	Buchholz
-13 Gast	1	A067	Wichtrach Schützen	Talbächli
-14 Heim	1	A019	Gysenstein FS	Ballenbühl
-14 Gast	1	A038	Linden FS	Kurzenberg
-15 Heim	1	A025	Häutligen FS	Wolfmatt
-15 Gast	1	A032	Kratzmattschützen	Beginners
-16 Heim	1	A003	Aareschützen Kiesen Oppligen	Stockhorn
-16 Gast	1	A033	Kratzmattschützen	Chäsrauft
-17 Heim	1	A012	Bowil MS	Dürrbach
-17 Gast	1	A024	Häutligen FS	Gantrisch
-18 Heim	1	A069	Wichtrach Schützen	Top- Gun
-18 Gast	1	A059	Sportschützen Furth	Zorro
-19 Heim	1	A060	Sportschützen Münsingen	Zentrum
-19 Gast	1	A013	Bowil MS	Merlin
-20 Heim	1	A058	Sportschützen Furth	Speher
-20 Gast	1	A002	Aareschützen Kiesen Oppligen	Bahnhöfli
-21 Heim	1	A043	Oberdiessbach SG	Mouchenwasser
-21 Gast	1	A052	Richigen FS	TEAM CRAFT
-22 Heim	1	A055	Schützen Grosshöchstetten	Waldrand
-22 Gast	1	A023	Häutligen FS	Eggacher
-23 Heim	1	A005	Allmendingen FS	Warts APP
-23 Gast	1	A021	Gysenstein FS	Ringkorn
-24 Heim	1	A041	Oberdiessbach SG	Ganztal
-24 Gast	1	A015	Falkenfluh-Schützen	Falkenfluh
-25 Heim	1	A054	Schützen Grosshöchstetten	Stiftung Waffentest
-25 Gast	1	A014	Falkenfluh-Schützen	Alt u. Jung
-26 Heim	1	A020	Gysenstein FS	Hobel
-26 Gast	1	A062	Tägertschi FS	Tell
-27 Heim	1	A036	Linden FS	Alfa Romeo
-27 Gast	1	A042	Oberdiessbach SG	Madagaskar
-28 Heim	1	A026	Konolfingen SG	Chläbi
-28 Gast	1	A007	Arni FS	Gunners
-29 Heim	1	A040	Oberdiessbach SG	90er Bande
-29 Gast	1	A027	Konolfingen SG	Die Unbekannte
-30 Heim	1	A004	Allmendingen FS	Chlepfcheibe
-30 Gast	1	A051	Richigen FS	Benchen
-31 Heim	1	A044	Oberthal MS	Blasenfluh
-31 Gast	1	A009	Biglen FS	Power
-32 Heim	1	A008	Arni FS	Rotiholz
-32 Gast	1	A061	Tägertschi FS	Höckeler
-33 Heim	1	A046	Oberthal MS	Guggiwäudli
-33 Gast	1	A018	Gysenstein FS	Amboss
-34 Heim	1	A030	Konolfingen SG	Hubel
-34 Gast	1	A010	Biglen FS	Wirbelwind
-35 Heim	1	A066	Trimstein Eichi FS	Tele- Tell
-35 Gast	1	A050	Oberthal MS	TEAM 86
-				
-				
-				
-				
+1;1 Heim;1;J003;Bowil MS
+;1 Gast;1;J007;Konolfingen SG
+;1 Gast;1;J021;Worb VSG
+2;2 Heim;1;J020;Trimstein Eichi FS
+;2 Gast;1;J012;Oberdiessbach SG
+;2 Gast;1;J015;Oberthal MS
+3;3 Heim;1;J002;Bowil MS
+;3 Gast;1;J013;Oberthal MS
+;3 Gast;1;J009;Linden FS
+4;4 Heim;1;J011;Obediessbach SG
+;4 Gast;1;J017;Trimstein Eichi FS
+;4 Gast;1;J004;Bowil MS
+5;5 Heim;1;J008;Konolfingen SG
+;5 Gast;1;J018;Trimstein Eichi FS
+;5 Gast;1;J005;Falkenfluh-Schützen
+6;6 Heim;1;J006;Konolfingen SG
+;6 Gast;1;J010;Oberdiessbach SG
+;6 Gast;1;J019;Trimstein Eichi FS
+7;7 Heim;1;J001;Aareschützen Kiesen-Oppligen
+;7 Gast;1;J016;Schützen Grosshöchstetten
+;7 Gast;2;J014;Oberthal MS
