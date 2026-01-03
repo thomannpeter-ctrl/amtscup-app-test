@@ -19,12 +19,13 @@ label{font-size:.8rem;font-weight:600}
 input,select{width:100%;padding:.45rem;border-radius:8px;border:1px solid #cbd5f5}
 .input-year{max-width:80px}
 .input-result{max-width:70px}
-th.gear,td.gear{width:90px}
+th.gear,td.gear{width:110px}
 th.zcol,td.zcol{width:65px}
+th.sex,td.sex{width:70px}
 table{width:100%;border-collapse:collapse;font-size:.85rem}
 th,td{border:1px solid #e5e7eb;padding:.4rem;text-align:center}
 th{background:#dbeafe}
-button{border:none;border-radius:999px;padding:.8rem;font-size:1rem;cursor:pointer;background:#2563eb;color:white;width:100%}
+button{border:none;border-radius:999px;padding:.9rem;font-size:1rem;cursor:pointer;background:#2563eb;color:white;width:100%}
 .winner{padding:.7rem;border-radius:12px;font-weight:700}
 .winner-ok{background:#dcfce7;color:#166534}
 .winner-none{background:#e5e7eb;color:#374151}
@@ -61,11 +62,7 @@ button{border:none;border-radius:999px;padding:.8rem;font-size:1rem;cursor:point
 </div>
 
 <div class="card">
-<button onclick="sendResult()">📧 Resultat per Mail senden</button>
-</div>
-
-<div class="card">
-<button onclick="sendToGoogle()">📊 In Google Tabelle speichern</button>
+<button onclick="sendAll()">📧 Mail & Google senden</button>
 </div>
 
 </div>
@@ -82,7 +79,7 @@ const SPORTGERAETE=[
 ];
 const zus=g=>(SPORTGERAETE.find(x=>x.n===g)||{z:0}).z;
 
-/* ================= APP ================= */
+/* ================= Gruppen ================= */
 
 async function loadGroups(){
  const r=await fetch("gruppen.txt?ts="+Date.now());
@@ -114,18 +111,27 @@ function createGroup(n,name){
  c.className="card";
  c.dataset.name=name;
  c.innerHTML=`<h2>Gruppe ${n}: ${name}</h2><table>
- <thead><tr><th>#</th><th>Name</th><th>Jahrgang</th>
+ <thead><tr>
+ <th>#</th><th>Name</th><th>Jahrgang</th><th class="sex">Gender</th>
  <th class="gear">Sportgerät</th><th>Resultat</th>
  <th class="zcol">Zuschlag</th><th>Total</th></tr></thead>
  <tbody></tbody>
- <tfoot><tr><th colspan="4">Summe</th>
+ <tfoot><tr><th colspan="5">Summe</th>
  <th class="sr">0</th><th class="sz">0</th><th class="st">0</th></tr></tfoot></table>`;
  const tb=c.querySelector("tbody");
+
  for(let i=1;i<=5;i++){
   const tr=document.createElement("tr");
   tr.innerHTML=`<td>${i}</td>
   <td><input class="n"></td>
   <td><input class="y input-year"></td>
+  <td class="sex">
+    <select class="sex">
+      <option value=""></option>
+      <option value="m">m</option>
+      <option value="w">w</option>
+    </select>
+  </td>
   <td class="gear"><select class="g"></select></td>
   <td><input class="r input-result"></td>
   <td class="zcol z">0</td><td class="t">0</td>`;
@@ -167,53 +173,48 @@ function calcWinner(){
   winner.innerHTML=`🏆 Sieger: ${d[0].n} (${d[0].t}) & ${d[1].n} (${d[1].t})<br>❌ Verlierer: ${d[2].n} (${d[2].t})`;
 }
 
-/* ===== Mail ===== */
-function sendResult(){
- let body=`AMTSCUP CUP-DUELL\n\nGruppenchef: ${chef.value}\nE-Mail: ${email.value}\n\n`;
- document.querySelectorAll("#groups .card").forEach((c,i)=>{
-  body+=`GRUPPE ${i+1}: ${c.dataset.name}\n`;
-  body+="Name;Jahrgang;Sportgerät;Resultat;Zuschlag;Total\n";
-  c.querySelectorAll("tbody tr").forEach(tr=>{
-   const n=tr.querySelector(".n").value;
-   const r=tr.querySelector(".r").value;
-   if(n||r)
-    body+=`${n};${tr.querySelector(".y").value};${tr.querySelector(".g").value};${r};${tr.querySelector(".z").textContent};${tr.querySelector(".t").textContent}\n`;
-  });
-  body+="\n";
- });
- body+="SIEGER:\n"+winner.textContent;
- location.href=`mailto:${RESULT_EMAIL}?subject=${encodeURIComponent("Amtscup Resultat")}&body=${encodeURIComponent(body)}`;
-}
-
-/* ===== Google Tabelle ===== */
-function sendToGoogle(){
+/* ===== Mail + Google ===== */
+function sendAll(){
+ let mail=`AMTSCUP CUP-DUELL\n\nGruppenchef: ${chef.value}\nE-Mail: ${email.value}\n\n`;
  const rows=[];
- document.querySelectorAll("#groups .card").forEach(c=>{
-  const gruppe=c.dataset.name;
+
+ document.querySelectorAll("#groups .card").forEach((c,i)=>{
+  mail+=`GRUPPE ${i+1}: ${c.dataset.name}\n`;
+  mail+="Name;Jahrgang;Gender;Sportgerät;Resultat;Zuschlag;Total\n";
+
   c.querySelectorAll("tbody tr").forEach(tr=>{
    const name=tr.querySelector(".n").value;
-   const r=tr.querySelector(".r").value;
-   if(!name&&!r) return;
-   rows.push({
-     gruppe,
+   const res=tr.querySelector(".r").value;
+   if(!name && !res) return;
+
+   const row={
+     gruppe:c.dataset.name,
      name,
      jahr:tr.querySelector(".y").value,
+     gender:tr.querySelector(".sex").value,
      geraet:tr.querySelector(".g").value,
-     resultat:r,
+     resultat:res,
      zuschlag:tr.querySelector(".z").textContent,
      total:tr.querySelector(".t").textContent
-   });
+   };
+   rows.push(row);
+
+   mail+=`${row.name};${row.jahr};${row.gender};${row.geraet};${row.resultat};${row.zuschlag};${row.total}\n`;
   });
+  mail+="\n";
  });
 
+ mail+="SIEGER:\n"+winner.textContent;
+
+ /* Mail */
+ location.href=`mailto:${RESULT_EMAIL}?subject=${encodeURIComponent("Amtscup Resultat")}&body=${encodeURIComponent(mail)}`;
+
+ /* Google */
  fetch(GOOGLE_URL,{
   method:"POST",
   headers:{"Content-Type":"application/json"},
   body:JSON.stringify({chef:chef.value,email:email.value,rows})
- })
- .then(r=>r.json())
- .then(()=>alert("✅ Erfolgreich in Google Tabelle gespeichert"))
- .catch(()=>alert("❌ Fehler beim Senden"));
+ });
 }
 
 loadGroups();
